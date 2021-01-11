@@ -89,9 +89,9 @@ def main():
     print('    VisNet params: %.2fM' % (vis_net_params/1000000.0))
     print('    TxtNet params: %.2fM' % (txt_net_params/1000000.0))
     print('    Total params: %.2fM' % ((vis_net_params+txt_net_params)/1000000.0))
-    print(model.state_dict())
-    print( checkpoint['model'])
-    return
+    # print(model.state_dict())
+    # print( checkpoint['model'])
+    # return
     model.load_state_dict(checkpoint['model'])
     print("=> loaded checkpoint '{}' (epoch {}, best_perf {})"
          .format(resume_file, epoch, best_perf))

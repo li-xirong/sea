@@ -207,7 +207,7 @@ class PrecomputedSentFeat(object):
 
 
 
-NAME_TO_T2V = {'bow': BowVec, 'bow_nsw':  BowVecNSW, 'soft_bow': SoftBowVec, 'soft_bow_nsw': SoftBowVecNSW, 'w2v': W2Vec, 'w2v_nsw': W2VecNSW, 'idxvec': IndexVec,'infersent':InferVec, 'precomputed_bert': PrecomputedSentFeat,}
+NAME_TO_T2V = {'bow': BowVec, 'bow_nsw':  BowVecNSW, 'soft_bow': SoftBowVec, 'soft_bow_nsw': SoftBowVecNSW, 'w2v': W2Vec, 'w2v_nsw': W2VecNSW, 'idxvec': IndexVec,'infersent':InferVec, 'precomputed_sent_feature': PrecomputedSentFeat,}
 
 
 def get_txt2vec(name):

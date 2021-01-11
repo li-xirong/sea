@@ -1,9 +1,7 @@
 
 class config(object):
-    model = 'multiscale_bert_w2v_bow'
-    # text_encoding = 'bow_nsw@w2v_nsw@precomputed_bert@online_bert'
-    # text_encoding = 'bow_nsw@w2v_nsw@online_bert'
-    text_encoding = 'bow_nsw@precomputed_w2v@precomputed_bert'
+    model = 'multispace_bow_w2v_bigru_bert'
+    text_encoding = 'bow_nsw@precomputed_w2v@bigru_mean@precomputed_bert'
     threshold = 5
     bow_norm = 0
     we_dim = 500
@@ -15,12 +13,12 @@ class config(object):
 
     bert_out_size = 768
     bert_feat_name = 'bert_feature_Layer_-2_uncased_L-12_H-768_A-12'
-    
+
     txt_fc_layers = '0-2048'
     txt_norm = 2 # L_2 norm
     use_abs = False
     batch_norm = False
-    
+
     vid_feat = 'mean_resnext101_resnet152'
     vis_fc_layers = '0-2048'
     vis_norm = 2 # L_2 norm

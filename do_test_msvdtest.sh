@@ -49,9 +49,9 @@ config=w2vvpp_resnext101-resnet152_multispace_bow_w2v_bigru_bert
 config=-1
 esac
 
-NO=$2
+NO=$3
 prefix=runs_$NO
-model_path=$rootpath/msvdtrain/w2vvpp_train/msvdval/$config/$prefix/model_best.pth.tar
+model_path=$rootpath/msvdtrain/sea_train/msvdval/$config/$prefix/model_best.pth.tar
 sim_name=msvdtrain/w2vvpp_train/msvdval/$config/$prefix
 
 if [ ! -f "$model_path" ]; then
@@ -59,7 +59,7 @@ if [ ! -f "$model_path" ]; then
     exit
 fi
 
-gpu=$3
+gpu=$2
 CUDA_VISIBLE_DEVICES=$gpu python predictor.py $testCollection $model_path $sim_name \
     --query_sets $testCollection.caption.txt \
     --rootpath $rootpath  --overwrite $overwrite

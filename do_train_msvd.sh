@@ -1,7 +1,7 @@
 
 # rootpath=$HOME/VisualSearch
 rootpath=data
-overwrite=0
+overwrite=1
 
 
 trainCollection=msvdtrain
@@ -27,6 +27,7 @@ config=w2vvpp_resnext101-resnet152_subspace_bow_w2v_bigru
 32)
 config=w2vvpp_resnext101-resnet152_multispace_bow_w2v_bigru
 ;;
+
 41)
 config=w2vvpp_resnext101-resnet152_subspace_bow_w2v_bert
 ;;

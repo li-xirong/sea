@@ -275,10 +275,25 @@ class SoftBoWTxtEncoder (BoWTxtEncoder):
 class W2VTxtEncoder (TxtEncoder):
     def __init__(self, opt):
         super(W2VTxtEncoder, self).__init__(opt)
-        self.t2v_w2v = opt.t2v_w2v
+        self.is_online, self.is_precomputed = False, False
+        for encoding in opt.text_encoding.split('@'):
+            if 'precomputed_w2v' in encoding:
+                self.id2v = opt.precomputed_feat_w2v
+                self.is_precomputed = True
+                logger.info('Offline Word2vec initializing')
+            elif 'w2v' in encoding:
+                self.t2v_w2v = opt.t2v_w2v             
+                self.is_online = True
+                logger.info('Online Word2vec model initializing')
+            
+        assert(self.is_online or self.is_precomputed)     
 
     def forward(self, txt_input, cap_ids):
-        w2v_out = torch.Tensor([self.t2v_w2v.encoding(caption) for caption in txt_input]).to(device)
+        if self.is_precomputed:
+            cap_ids = list(cap_ids)
+            w2v_out = torch.Tensor( self.id2v.encoding(cap_ids)).to(device)
+        else:
+            w2v_out = torch.Tensor([self.t2v_w2v.encoding(caption) for caption in txt_input]).to(device)
         return w2v_out
 
 
@@ -316,16 +331,16 @@ class BertTxtEncoder (TxtEncoder):
                 logger.info('Online BertClient initializing')
 
             if 'precomputed_bert' in encoding:
-                self.s2v = opt.precomputed_feat_bert
+                self.id2v = opt.precomputed_feat_bert
                 self.is_precomputed = True
-                logger.info('offline bert initializing')
+                logger.info('Offline bert initializing')
         assert(self.is_online or self.is_precomputed)
 
 
     def forward(self, txt_input, cap_ids):
         if self.is_precomputed:
             cap_ids = list(cap_ids)
-            bert_out = torch.Tensor( self.s2v.encoding(cap_ids)).to(device)
+            bert_out = torch.Tensor( self.id2v.encoding(cap_ids)).to(device)
         else:
             txt_input = list(txt_input)
             bert_out = torch.Tensor( self.bc.encode(txt_input) ).to(device)
@@ -339,8 +354,8 @@ class MultiScaleTxtEncoder_w2v_bow (TxtEncoder):
         self.bow_encoder = BoWTxtEncoder(opt)
 
     def forward(self, txt_input, cap_ids):
-        w2v_out = self.w2v_encoder(txt_input)
-        bow_out = self.bow_encoder(txt_input)
+        w2v_out = self.w2v_encoder(txt_input, cap_ids)
+        bow_out = self.bow_encoder(txt_input, cap_ids)
 
         out = torch.cat((w2v_out, bow_out), dim=1)
         return out
@@ -369,8 +384,8 @@ class MultiScaleTxtEncoder_netvlad_bow (TxtEncoder):
         print('txt_cat_norm: %s' % self.txt_cat_norm)
 
     def forward(self, txt_input, cap_ids):
-        netvlad_out = self.netvlad_encoder(txt_input)
-        bow_out = self.bow_encoder(txt_input)
+        netvlad_out = self.netvlad_encoder(txt_input, cap_ids)
+        bow_out = self.bow_encoder(txt_input, cap_ids)
 
         if self.txt_cat_norm:
             bow_out = l2norm(bow_out)
@@ -388,9 +403,9 @@ class MultiScaleTxtEncoder_bigru_netvlad_bow (TxtEncoder):
         print('txt_cat_norm: %s' % self.txt_cat_norm)
 
     def forward(self, txt_input, cap_ids):
-        rnn_out = self.rnn_encoder(txt_input)
-        netvlad_out = self.netvlad_encoder(txt_input)
-        bow_out = self.bow_encoder(txt_input)
+        rnn_out = self.rnn_encoder(txt_input, cap_ids)
+        netvlad_out = self.netvlad_encoder(txt_input, cap_ids)
+        bow_out = self.bow_encoder(txt_input, cap_ids)
 
         if self.txt_cat_norm:
             rnn_out = l2norm(rnn_out)
@@ -416,9 +431,9 @@ class MultiScaleTxtEncoder_gru_w2v_bow (TxtEncoder):
         """Handles variable size captions
         """
         # Embed word ids to vectors
-        rnn_out = self.rnn_encoder(txt_input)
-        w2v_out = self.w2v_encoder(txt_input)
-        bow_out = self.bow_encoder(txt_input)
+        rnn_out = self.rnn_encoder(txt_input, cap_ids)
+        w2v_out = self.w2v_encoder(txt_input, cap_ids)
+        bow_out = self.bow_encoder(txt_input, cap_ids)
 
         out = torch.cat((rnn_out, w2v_out, bow_out), dim=1)
         return out
@@ -433,9 +448,9 @@ class MultiScaleTxtEncoder_bert_gru_w2v_bow (MultiScaleTxtEncoder_gru_w2v_bow):
         """Handles variable size captions
         """
         # Embed word ids to vectors
-        rnn_out = self.rnn_encoder(txt_input)
-        w2v_out = self.w2v_encoder(txt_input)
-        bow_out = self.bow_encoder(txt_input)
+        rnn_out = self.rnn_encoder(txt_input, cap_ids)
+        w2v_out = self.w2v_encoder(txt_input, cap_ids)
+        bow_out = self.bow_encoder(txt_input, cap_ids)
         bert_out = self.bert_encoder(txt_input, cap_ids)
         out = torch.cat((bert_out, rnn_out, w2v_out, bow_out), dim=1)
         return out
@@ -458,11 +473,11 @@ class MultiScaleTxtEncoder_bert_bigru_w2v_bow(MultiScaleTxtEncoder_bigru_w2v_bow
         super(MultiScaleTxtEncoder_bert_bigru_w2v_bow, self).__init__(opt)
         self.bert_encoder = BertTxtEncoder(opt)
 
-    def forward (self, txt_input):
+    def forward (self, txt_input, cap_ids):
         bert_out = self.bert_encoder(txt_input, cap_ids)
-        rnn_out = self.rnn_encoder(txt_input)
-        w2v_out = self.w2v_encoder(txt_input)
-        bow_out = self.bow_encoder(txt_input)
+        rnn_out = self.rnn_encoder(txt_input, cap_ids)
+        w2v_out = self.w2v_encoder(txt_input, cap_ids)
+        bow_out = self.bow_encoder(txt_input, cap_ids)
 
         out = torch.cat((bert_out, rnn_out, w2v_out, bow_out), dim=1)
         return out
@@ -478,7 +493,7 @@ class MultiScaleTxtEncoder_gruFC_w2vFC_bowFC (TxtEncoder):
 
         self.w2v_encoder = W2VTxtEncoder(opt)
         w2v_opt = copy.deepcopy(opt)
-        w2v_opt.txt_fc_layers[0] = opt.t2v_w2v.ndims
+        w2v_opt.txt_fc_layers[0] = opt.w2v_out_size
         self.w2v_fc = TxtTransformNet(w2v_opt)
 
         self.bow_encoder = BoWTxtEncoder(opt)
@@ -490,9 +505,9 @@ class MultiScaleTxtEncoder_gruFC_w2vFC_bowFC (TxtEncoder):
 
     def forward(self, txt_input, cap_ids):
         # Embed word ids to vectors
-        rnn_out = self.rnn_fc(self.rnn_encoder(txt_input))
-        w2v_out = self.w2v_fc(self.w2v_encoder(txt_input))
-        bow_out = self.bow_fc(self.bow_encoder(txt_input))
+        rnn_out = self.rnn_fc(self.rnn_encoder(txt_input, cap_ids))
+        w2v_out = self.w2v_fc(self.w2v_encoder(txt_input, cap_ids))
+        bow_out = self.bow_fc(self.bow_encoder(txt_input, cap_ids))
 
         out = torch.cat((rnn_out, w2v_out, bow_out), dim=1)
         return out
@@ -508,12 +523,12 @@ class MultiScaleTxtEncoder_gru_w2v_bowFC (TxtEncoder):
         bow_opt.txt_fc_layers[0] = opt.t2v_bow.ndims
         self.bow_fc = TxtTransformNet(bow_opt)
 
-        self.out_size = opt.rnn_size + opt.t2v_w2v.ndims + opt.txt_fc_layers[-1]
+        self.out_size = opt.rnn_size + opt.w2v_out_size + opt.txt_fc_layers[-1]
 
     def forward(self, txt_input, cap_ids):
-        rnn_out =  self.rnn_encoder(txt_input)
-        w2v_out =  self.w2v_encoder(txt_input)
-        bow_out = self.bow_fc(self.bow_encoder(txt_input))
+        rnn_out =  self.rnn_encoder(txt_input, cap_ids)
+        w2v_out =  self.w2v_encoder(txt_input, cap_ids)
+        bow_out = self.bow_fc(self.bow_encoder(txt_input, cap_ids))
 
         out = torch.cat((rnn_out, w2v_out, bow_out), dim=1)
         return out
@@ -531,9 +546,9 @@ class MultiScaleTxtEncoder_infersent_w2v_bow (TxtEncoder):
         self.bow_encoder = BoWTxtEncoder(opt)
 
     def forward(self, txt_input, cap_ids):
-        inf_out = self.inf_encoder(txt_input)
-        w2v_out = self.w2v_encoder(txt_input)
-        bow_out = self.bow_encoder(txt_input)
+        inf_out = self.inf_encoder(txt_input, cap_ids)
+        w2v_out = self.w2v_encoder(txt_input, cap_ids)
+        bow_out = self.bow_encoder(txt_input, cap_ids)
 
         out = torch.cat((inf_out, w2v_out, bow_out), dim=1)
         return out
@@ -576,7 +591,7 @@ class SoftBoWTxtNet(TxtNet):
 
 class W2VTxtNet(TxtNet):
     def _init_encoder(self, opt):
-        opt.txt_fc_layers[0] = opt.t2v_w2v.ndims
+        opt.txt_fc_layers[0] = opt.w2v_out_size
         self.encoder = W2VTxtEncoder(opt)
 
 class W2V_NetVLADTxtNet(TxtNet):
@@ -619,7 +634,7 @@ class BertTxtNet(TxtNet):
 
 class MultiScaleTxtNet_w2v_bow (TxtNet):
     def _init_encoder(self, opt):
-        opt.txt_fc_layers[0] = opt.t2v_bow.ndims + opt.t2v_w2v.ndims
+        opt.txt_fc_layers[0] = opt.t2v_bow.ndims + opt.w2v_out_size
         self.encoder = MultiScaleTxtEncoder_w2v_bow(opt)
 
 class MultiScaleTxtNet_netvlad_bow (TxtNet):
@@ -634,47 +649,47 @@ class MultiScaleTxtNet_bigru_netvlad_bow (TxtNet):
 
 class MultiScaleTxtNet_gru_w2v_bow (TxtNet):
     def _init_encoder(self, opt):
-        opt.txt_fc_layers[0] = (opt.rnn_size + opt.t2v_bow.ndims + opt.t2v_w2v.ndims)
+        opt.txt_fc_layers[0] = (opt.rnn_size + opt.t2v_bow.ndims + opt.w2v_out_size)
         self.encoder = MultiScaleTxtEncoder_gru_w2v_bow(opt)
 
 class MultiScaleTxtNet_lstm_w2v_bow (TxtNet):
     def _init_encoder(self, opt):
-        opt.txt_fc_layers[0] = (opt.rnn_size + opt.t2v_bow.ndims + opt.t2v_w2v.ndims)
+        opt.txt_fc_layers[0] = (opt.rnn_size + opt.t2v_bow.ndims + opt.w2v_out_size)
         self.encoder = MultiScaleTxtEncoder_lstm_w2v_bow(opt)
 
 class MultiScaleTxtNet_gru_w2v_softbow(TxtNet):
     def _init_encoder(self, opt):
-        opt.txt_fc_layers[0] = (opt.rnn_size + opt.t2v_bow.ndims + opt.t2v_w2v.ndims)
+        opt.txt_fc_layers[0] = (opt.rnn_size + opt.t2v_bow.ndims + opt.w2v_out_size)
         self.encoder = MultiScaleTxtEncoder_gru_w2v_softbow(opt)
 
 class MultiScaleTxtNet_infersent_w2v_bow(TxtNet):
     def _init_encoder(self, opt):
-        opt.txt_fc_layers[0] = opt.t2v_infer.ndims + opt.t2v_bow.ndims + opt.t2v_w2v.ndims
+        opt.txt_fc_layers[0] = opt.t2v_infer.ndims + opt.t2v_bow.ndims + opt.w2v_out_size
         self.encoder = MultiScaleTxtEncoder_infersent_w2v_bow(opt)
 
 class MultiScaleTxtNet_infersent_w2v_softbow(TxtNet):
     def _init_encoder(self, opt):
-        opt.txt_fc_layers[0] = opt.t2v_infer.ndims + opt.t2v_bow.ndims + opt.t2v_w2v.ndims
+        opt.txt_fc_layers[0] = opt.t2v_infer.ndims + opt.t2v_bow.ndims + opt.w2v_out_size
         self.encoder = MultiScaleTxtEncoder_infersent_w2v_softbow(opt)
 
 class MultiScaleTxtNet_bigru_w2v_bow(TxtNet):
     def _init_encoder(self, opt):
-        opt.txt_fc_layers[0] = opt.rnn_size*2 + opt.t2v_bow.ndims + opt.t2v_w2v.ndims
+        opt.txt_fc_layers[0] = opt.rnn_size*2 + opt.t2v_bow.ndims + opt.w2v_out_size
         self.encoder = MultiScaleTxtEncoder_bigru_w2v_bow(opt)
 
 class MultiScaleTxtNet_bert_bigru_w2v_bow(TxtNet):
     def _init_encoder(self, opt):
-        opt.txt_fc_layers[0] = opt.rnn_size*2 + opt.t2v_bow.ndims + opt.t2v_w2v.ndims + opt.bert_out_size
+        opt.txt_fc_layers[0] = opt.rnn_size*2 + opt.t2v_bow.ndims + opt.w2v_out_size + opt.bert_out_size
         self.encoder = MultiScaleTxtEncoder_bert_bigru_w2v_bow(opt)
 
 class MultiScaleTxtNet_bert_gru_w2v_bow(TxtNet):
     def _init_encoder(self, opt):
-        opt.txt_fc_layers[0] = opt.rnn_size + opt.t2v_bow.ndims + opt.t2v_w2v.ndims + opt.bert_out_size
+        opt.txt_fc_layers[0] = opt.rnn_size + opt.t2v_bow.ndims + opt.w2v_out_size + opt.bert_out_size
         self.encoder = MultiScaleTxtEncoder_bert_gru_w2v_bow(opt)
 
 class MultiScaleTxtNet_bert_w2v_bow(TxtNet):
     def _init_encoder(self, opt):
-        opt.txt_fc_layers[0] = opt.t2v_bow.ndims + opt.t2v_w2v.ndims + opt.bert_out_size
+        opt.txt_fc_layers[0] = opt.t2v_bow.ndims + opt.w2v_out_size + opt.bert_out_size
         self.encoder = MultiScaleTxtEncoder_bert_w2v_bow(opt)
 
 
@@ -705,10 +720,10 @@ class MultiSpaceTxtNet (nn.Module):
         self.txt_net_g = GruTxtNet(opt)
 
     def forward(self, txt_input, cap_ids):
-        feature_m = self.txt_net_m(txt_input)
-        feature_b = self.txt_net_b(txt_input)
-        feature_w = self.txt_net_w(txt_input)
-        feature_g = self.txt_net_g(txt_input)
+        feature_m = self.txt_net_m(txt_input, cap_ids)
+        feature_b = self.txt_net_b(txt_input, cap_ids)
+        feature_w = self.txt_net_w(txt_input, cap_ids)
+        feature_g = self.txt_net_g(txt_input, cap_ids)
 
         return feature_m, feature_b, feature_w, feature_g
 
@@ -723,9 +738,9 @@ class MultiSpaceTxtNet_bow_w2v_gru (nn.Module):
         self.txt_net_g = GruTxtNet(opt)
 
     def forward(self, txt_input, cap_ids):
-        feature_b = self.txt_net_b(txt_input)
-        feature_w = self.txt_net_w(txt_input)
-        feature_g = self.txt_net_g(txt_input)
+        feature_b = self.txt_net_b(txt_input, cap_ids)
+        feature_w = self.txt_net_w(txt_input, cap_ids)
+        feature_g = self.txt_net_g(txt_input, cap_ids)
 
         return feature_b, feature_w, feature_g
 
@@ -735,9 +750,9 @@ class MultiSpaceTxtNet_bow_w2v_gru_bert (MultiSpaceTxtNet_bow_w2v_gru):
         self.txt_net_bt = BertTxtNet(opt)
 
     def forward(self, txt_input, cap_ids):
-        feature_b = self.txt_net_b(txt_input)
-        feature_w = self.txt_net_w(txt_input)
-        feature_g = self.txt_net_g(txt_input)
+        feature_b = self.txt_net_b(txt_input, cap_ids)
+        feature_w = self.txt_net_w(txt_input, cap_ids)
+        feature_g = self.txt_net_g(txt_input, cap_ids)
         feature_bt = self.txt_net_bt(txt_input, cap_ids)
 
 
@@ -760,9 +775,9 @@ class MultiSpaceTxtNet_bow_w2v_infersent(nn.Module):
         self.txt_net_i = InfersentTxtNet(opt)
 
     def forward(self, txt_input, cap_ids):
-        feature_b = self.txt_net_b(txt_input)
-        feature_w = self.txt_net_w(txt_input)
-        feature_i = self.txt_net_i(txt_input)
+        feature_b = self.txt_net_b(txt_input, cap_ids)
+        feature_w = self.txt_net_w(txt_input, cap_ids)
+        feature_i = self.txt_net_i(txt_input, cap_ids)
 
         return feature_b, feature_w, feature_i
  
@@ -774,9 +789,9 @@ class MultiSpaceTxtNet_softbow_w2v_gru (nn.Module):
         self.txt_net_g = GruTxtNet(opt)
 
     def forward(self, txt_input, cap_ids):
-        feature_b = self.txt_net_b(txt_input)
-        feature_w = self.txt_net_w(txt_input)
-        feature_g = self.txt_net_g(txt_input)
+        feature_b = self.txt_net_b(txt_input, cap_ids)
+        feature_w = self.txt_net_w(txt_input, cap_ids)
+        feature_g = self.txt_net_g(txt_input, cap_ids)
 
         return feature_b, feature_w, feature_g
 
@@ -788,9 +803,9 @@ class MultiSpaceTxtNet_softbow_w2v_infersent (nn.Module):
         self.txt_net_i = InfersentTxtNet(opt)
 
     def forward(self, txt_input, cap_ids):
-        feature_b = self.txt_net_b(txt_input)
-        feature_w = self.txt_net_w(txt_input)
-        feature_i = self.txt_net_i(txt_input)
+        feature_b = self.txt_net_b(txt_input, cap_ids)
+        feature_w = self.txt_net_w(txt_input, cap_ids)
+        feature_i = self.txt_net_i(txt_input, cap_ids)
 
         return feature_b, feature_w, feature_i
 
@@ -803,9 +818,9 @@ class MultiSpaceTxtNet_bow_w2v_bigru (nn.Module):
         self.txt_net_g = BiGruTxtNet(opt)
 
     def forward(self, txt_input, cap_ids):
-        feature_b = self.txt_net_b(txt_input)
-        feature_w = self.txt_net_w(txt_input)
-        feature_g = self.txt_net_g(txt_input)
+        feature_b = self.txt_net_b(txt_input, cap_ids)
+        feature_w = self.txt_net_w(txt_input, cap_ids)
+        feature_g = self.txt_net_g(txt_input, cap_ids)
 
         return feature_b, feature_w, feature_g
 
@@ -815,9 +830,9 @@ class MultiSpaceTxtNet_bow_w2v_bigru_bert (MultiSpaceTxtNet_bow_w2v_bigru):
         self.txt_net_bt = BertTxtNet(opt)
 
     def forward(self, txt_input, cap_ids):
-        feature_b = self.txt_net_b(txt_input)
-        feature_w = self.txt_net_w(txt_input)
-        feature_g = self.txt_net_g(txt_input)
+        feature_b = self.txt_net_b(txt_input, cap_ids)
+        feature_w = self.txt_net_w(txt_input, cap_ids)
+        feature_g = self.txt_net_g(txt_input, cap_ids)
         feature_bt = self.txt_net_bt(txt_input, cap_ids)
 
         return feature_b, feature_w, feature_g, feature_bt
@@ -830,9 +845,9 @@ class MultiSpaceTxtNet_bow_netvlad_bigru (nn.Module):
         self.txt_net_g = BiGruTxtNet(opt)
 
     def forward(self, txt_input, cap_ids):
-        feature_b = self.txt_net_b(txt_input)
-        feature_n = self.txt_net_n(txt_input)
-        feature_g = self.txt_net_g(txt_input)
+        feature_b = self.txt_net_b(txt_input, cap_ids)
+        feature_n = self.txt_net_n(txt_input, cap_ids)
+        feature_g = self.txt_net_g(txt_input, cap_ids)
 
         return feature_b, feature_n, feature_g
 
@@ -848,9 +863,9 @@ class MultiSpaceTxtNet_softbow_w2v_bigru (nn.Module):
         self.txt_net_g = BiGruTxtNet(opt)
 
     def forward(self, txt_input, cap_ids):
-        feature_b = self.txt_net_b(txt_input)
-        feature_w = self.txt_net_w(txt_input)
-        feature_g = self.txt_net_g(txt_input)
+        feature_b = self.txt_net_b(txt_input, cap_ids)
+        feature_w = self.txt_net_w(txt_input, cap_ids)
+        feature_g = self.txt_net_g(txt_input, cap_ids)
 
         return feature_b, feature_w, feature_g
 
@@ -868,10 +883,10 @@ class MultiSpaceTxtNet_softbow_w2v_bigru_infersent (nn.Module):
         
 
     def forward(self, txt_input, cap_ids):
-        feature_b = self.txt_net_b(txt_input)
-        feature_w = self.txt_net_w(txt_input)
-        feature_g = self.txt_net_g(txt_input)
-        feature_i = self.txt_net_i(txt_input)
+        feature_b = self.txt_net_b(txt_input, cap_ids)
+        feature_w = self.txt_net_w(txt_input, cap_ids)
+        feature_g = self.txt_net_g(txt_input, cap_ids)
+        feature_i = self.txt_net_i(txt_input, cap_ids)
 
         return feature_b, feature_w, feature_g ,feature_i
     
@@ -883,8 +898,8 @@ class MultiSpaceTxtNet_bow_w2v (nn.Module):
         self.txt_net_w = W2VTxtNet(opt)
 
     def forward(self, txt_input, cap_ids):
-        feature_b = self.txt_net_b(txt_input)
-        feature_w = self.txt_net_w(txt_input)
+        feature_b = self.txt_net_b(txt_input, cap_ids)
+        feature_w = self.txt_net_w(txt_input, cap_ids)
 
         return feature_b, feature_w
 
@@ -894,8 +909,8 @@ class MultiSpaceTxtNet_bow_w2v_bert (MultiSpaceTxtNet_bow_w2v):
         self.txt_net_bt = BertTxtNet(opt)
 
     def forward(self, txt_input, cap_ids):
-        feature_b = self.txt_net_b(txt_input)
-        feature_w = self.txt_net_w(txt_input)
+        feature_b = self.txt_net_b(txt_input, cap_ids)
+        feature_w = self.txt_net_w(txt_input, cap_ids)
         feature_bt = self.txt_net_bt(txt_input, cap_ids)
 
         return feature_b, feature_w, feature_bt
@@ -909,8 +924,8 @@ class MultiSpaceTxtNet_bow_netvlad (nn.Module):
         self.txt_net_w = W2V_NetVLADTxtNet(opt)
 
     def forward(self, txt_input, cap_ids):
-        feature_b = self.txt_net_b(txt_input)
-        feature_w = self.txt_net_w(txt_input)
+        feature_b = self.txt_net_b(txt_input, cap_ids)
+        feature_w = self.txt_net_w(txt_input, cap_ids)
 
         return feature_b, feature_w
 
@@ -922,8 +937,8 @@ class MultiSpaceTxtNet_bow_gru (nn.Module):
         self.txt_net_g = GruTxtNet(opt)
 
     def forward(self, txt_input, cap_ids):
-        feature_b = self.txt_net_b(txt_input)
-        feature_g = self.txt_net_g(txt_input)
+        feature_b = self.txt_net_b(txt_input, cap_ids)
+        feature_g = self.txt_net_g(txt_input, cap_ids)
 
         return feature_b, feature_g
 
@@ -935,8 +950,8 @@ class MultiSpaceTxtNet_w2v_gru (nn.Module):
         self.txt_net_g = GruTxtNet(opt)
 
     def forward(self, txt_input, cap_ids):
-        feature_w = self.txt_net_w(txt_input)
-        feature_g = self.txt_net_g(txt_input)
+        feature_w = self.txt_net_w(txt_input, cap_ids)
+        feature_g = self.txt_net_g(txt_input, cap_ids)
 
         return feature_w, feature_g
 
@@ -951,7 +966,7 @@ class OneLossMultiSpaceTxtNet (nn.Module):
         self.txt_net_b1 = BoWTxtNet(opt)
         self.txt_net_b2 = BoWTxtNet(opt)
 
-        opt.txt_fc_layers[0] = opt.t2v_w2v.ndims
+        opt.txt_fc_layers[0] = opt.w2v_out_size
         self.txt_net_w1 = W2VTxtNet(opt)
         self.txt_net_w2 = W2VTxtNet(opt)
 
@@ -985,6 +1000,7 @@ class MultiSpaceVisNet (nn.Module):
         feature_g = self.vis_net_g(vis_input)
 
         return feature_m, feature_b, feature_w, feature_g
+
 
 
 class MultiSpaceVisNet_2 (nn.Module):

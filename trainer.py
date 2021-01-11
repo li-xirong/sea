@@ -125,7 +125,7 @@ def main():
         rnn_vocab_file = os.path.join(rootpath, trainCollection, 'TextData', 'vocab', 'gru_%d.pkl'%(config.threshold))
     
     infer_model_file = os.path.join(rootpath, 'encoder', 'infersent_fasttext_crawl-300d-2M.vec.pkl')
-
+    w2v_data_path = os.path.join(rootpath, 'word2vec', 'flickr', 'vec500flickr30m')
     for encoding in config.text_encoding.split('@'):
         if 'bow' in encoding:
             if opt.resume:
@@ -136,10 +136,7 @@ def main():
                 print(resume_trainCollection, bow_vocab_file)
             else:
                 bow_vocab_file = os.path.join(rootpath, trainCollection, 'TextData', 'vocab', '%s_%d.pkl'%(encoding, config.threshold))
-            config.t2v_bow = get_txt2vec(encoding)(bow_vocab_file, norm=config.bow_norm)
-        if 'w2v' in encoding:
-            w2v_data_path = os.path.join(rootpath, 'word2vec', 'flickr', 'vec500flickr30m')
-            config.t2v_w2v = get_txt2vec(encoding)(w2v_data_path)
+            config.t2v_bow = get_txt2vec(encoding)(bow_vocab_file, norm=config.bow_norm)   
         if 'gru' in encoding or 'lstm' in encoding:
             rnn_encoding, config.pooling = encoding.split('_', 1)
             config.t2v_idx = get_txt2vec('idxvec')(rnn_vocab_file)
@@ -148,8 +145,13 @@ def main():
         if 'infersent' in encoding:
             config.t2v_infer = get_txt2vec('infersent')(infer_model_file)
         if 'precomputed_bert' in encoding:
-            config.precomputed_feat_bert = get_txt2vec('precomputed_bert')(trainCollection, config.bert_feat_name, rootpath)
-        # if 'precomputed_w2v' in encoding = get_txt2vec('precomputed_w2v')    
+            config.precomputed_feat_bert = get_txt2vec('precomputed_sent_feature')(trainCollection, config.bert_feat_name, rootpath)
+        if 'precomputed_w2v' in encoding:
+            config.precomputed_feat_w2v = get_txt2vec('precomputed_sent_feature')(trainCollection, config.w2v_feat_name, rootpath)
+        elif 'w2v' in encoding:  
+            config.t2v_w2v = get_txt2vec(encoding)(w2v_data_path)
+        
+   
 
 
     config.txt_fc_layers = map(int, config.txt_fc_layers.split('-'))
