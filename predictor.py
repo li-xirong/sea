@@ -21,7 +21,7 @@ from generic_utils import Progbar
 
 
 def parse_args():
-    parser = argparse.ArgumentParser('W2VVPP predictor')
+    parser = argparse.ArgumentParser('SEA predictor')
     parser.add_argument('--rootpath', type=str, default=ROOT_PATH,
                         help='path to datasets. (default: %s)'%ROOT_PATH)
     parser.add_argument('testCollection', type=str,
@@ -99,7 +99,7 @@ def main():
     #config.vid_feat = 'pyresnext-101_rbps13k,flatten0_output,os+pyresnet-152_imagenet11k,flatten0_output,os'
     vis_feat_file = BigFile(os.path.join(rootpath, testCollection, 'FeatureData', config.vid_feat))
     
-    vis_ids = map(str.strip, open(os.path.join(rootpath, testCollection, 'VideoSets', testCollection+'.txt')))
+    vis_ids = list(map(str.strip, open(os.path.join(rootpath, testCollection, 'VideoSets', testCollection+'.txt'))))
     # vis_ids = map(str.strip, open("/data/home/zhoufm/VisualSearch/v3c1/VideoSets/v3c1_of_two_people_kissing.txt"))
     # print ("vis_ids", "/data/home/zhoufm/VisualSearch/v3c1/VideoSets/v3c1_of_two_people_kissing.txt")
 

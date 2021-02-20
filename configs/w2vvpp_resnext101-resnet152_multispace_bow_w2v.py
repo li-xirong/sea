@@ -10,7 +10,7 @@ class config(object):
     rnn_layer = 1
     
     w2v_out_size = 500
-    w2v_feat_name = 'word2vec_flickr_vec500flickr30m_nsw/'
+    w2v_feat_name = 'word2vec_flickr_vec500flickr30m_nsw'
 
     txt_fc_layers = '0-2048'
     txt_norm = 2 # L_2 norm

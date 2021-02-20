@@ -1,4 +1,6 @@
 from bert_serving.client import BertClient
+bert_serving_ip = '10.77.50.197'
+
 
 dataset = 'msvdtest'
 txt_file = '/home/zhoufm/github/sea/data/' + dataset + '/TextData/' + dataset + '.caption.txt'
@@ -14,7 +16,7 @@ with open(txt_file, 'r') as fr:
         txt_input.append(cap_content)
         # break
 print len(cap_ids), len(txt_input)
-bc = BertClient(ip='10.77.50.197', port=1234, port_out=4321, check_version=False)
+bc = BertClient(ip=bert_serving_ip, port=1234, port_out=4321, check_version=False)
 txt_bert_feature = bc.encode(txt_input)
 # print txt_bert_feature, txt_bert_feature[0][:10]
 assert len(txt_bert_feature) == len(cap_ids)

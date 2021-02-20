@@ -1,14 +1,10 @@
-
 # rootpath=$HOME/VisualSearch
 rootpath=data
-overwrite=1
-
-
+overwrite=0
 trainCollection=msvdtrain
 valCollection=msvdval
 
-option=$1
-case ${option} in
+case $1 in
 11)
 config=w2vvpp_resnext101-resnet152_subspace_bow_w2v
 ;;
@@ -27,7 +23,6 @@ config=w2vvpp_resnext101-resnet152_subspace_bow_w2v_bigru
 32)
 config=w2vvpp_resnext101-resnet152_multispace_bow_w2v_bigru
 ;;
-
 41)
 config=w2vvpp_resnext101-resnet152_subspace_bow_w2v_bert
 ;;
@@ -51,7 +46,6 @@ config=-1
 esac
 
 gpu=$2
-NO=$3
-prefix=runs_$NO
+prefix=runs_$3
 CUDA_VISIBLE_DEVICES=$gpu python trainer.py $trainCollection $valCollection  --overwrite $overwrite\
     --rootpath $rootpath --config $config  --model_prefix $prefix

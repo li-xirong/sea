@@ -4,7 +4,7 @@
 # Written by Xirong Li & Chaoxi Xu
 # --------------------------------------------------------
 
-from __future__ import print_function
+# from __future__ import print_function
 
 import os
 import sys
@@ -112,7 +112,7 @@ def main():
     cap_file_paths = {'train': os.path.join(rootpath, trainCollection, 'TextData', capfiles['train'])}
 
     vis_feat_files = {x: BigFile(os.path.join(rootpath, collections[x], 'FeatureData', config.vid_feat)) for x in collections}
-    config.vis_fc_layers = map(int, config.vis_fc_layers.split('-'))
+    config.vis_fc_layers = list(map(int, config.vis_fc_layers.split('-')))
     if config.vis_fc_layers[0] == 0:
         config.vis_fc_layers[0] = vis_feat_files['train'].ndims
 
@@ -154,7 +154,7 @@ def main():
    
 
 
-    config.txt_fc_layers = map(int, config.txt_fc_layers.split('-'))
+    config.txt_fc_layers = list(map(int, config.txt_fc_layers.split('-')))
 
     # Construct the model
     config.pre_norm = opt.pre_norm
@@ -178,7 +178,7 @@ def main():
     caption_mask = ('caption_mask' in opt.config_name)
     logger.info('caption mask: %s'%caption_mask)
     #data_loaders = {x: data.frame_pair_provider({'vis_feat':vis_feat_files[x], 'capfile':cap_file_paths[x], 'pin_memory': True,
-    val_vis_ids = map(str.strip, open(os.path.join(rootpath, collections['val'], 'VideoSets', '%s.txt'%collections['val'])))
+    val_vis_ids = list(map(str.strip, open(os.path.join(rootpath, collections['val'], 'VideoSets', '%s.txt'%collections['val']))))
 
     if hasattr(config, 'model') and config.model in ['multispace_visnetvlad_bow_w2v']:
         train_loader = data.frame_pair_provider({'vis_feat': vis_feat_files['train'], 'capfile': cap_file_paths['train'], 'pin_memory': True,

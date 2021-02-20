@@ -10,7 +10,7 @@ class BigFile:
         assert(len(self.names) == self.nr_of_images)
         self.name2index = dict(zip(self.names, range(self.nr_of_images)))
         self.binary_file = os.path.join(datadir, bin_file)
-        print ("[%s] %dx%d instances loaded from %s" % (self.__class__.__name__, self.nr_of_images, self.ndims, datadir))
+        print("[%s] %dx%d instances loaded from %s" % (self.__class__.__name__, self.nr_of_images, self.ndims, datadir))
 
 
     def readall(self, isname=True):
@@ -106,7 +106,7 @@ class StreamFile:
         assert(len(self.names) == self.nr_of_images)
         self.name2index = dict(zip(self.names, range(self.nr_of_images)))
         self.binary_file = os.path.join(datadir, "feature.bin")
-        print ("[%s] %dx%d instances loaded from %s" % (self.__class__.__name__, self.nr_of_images, self.ndims, datadir))
+        print("[%s] %dx%d instances loaded from %s" % (self.__class__.__name__, self.nr_of_images, self.ndims, datadir))
         self.fr = None
         self.current = 0
     
@@ -144,12 +144,12 @@ if __name__ == '__main__':
 
 
     for name,vec in zip(renamed, vectors):
-        print name, vec
+        print(name, vec)
         
     bigfile = StreamFile(feat_dir)
     bigfile.open()
     for name, vec in bigfile:
-        print name, vec
+        print(name, vec)
     bigfile.close()
 
     

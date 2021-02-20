@@ -1,14 +1,14 @@
-
 # rootpath=$HOME/VisualSearch
 rootpath=data
-overwrite=1
-
+overwrite=0
 trainCollection=msvdtrain
 valCollection=msvdval
 testCollection=msvdtest
 
-option=$1
-case ${option} in
+# for option in 11 12 21 22 31 32 41 42 51 52 61 62;
+# do
+
+case $1 in
 11)
 config=w2vvpp_resnext101-resnet152_subspace_bow_w2v
 ;;
@@ -49,19 +49,24 @@ config=w2vvpp_resnext101-resnet152_multispace_bow_w2v_bigru_bert
 config=-1
 esac
 
-NO=$3
-prefix=runs_$NO
-model_path=$rootpath/msvdtrain/sea_train/msvdval/$config/$prefix/model_best.pth.tar
-sim_name=msvdtrain/sea_train/msvdval/$config/$prefix
+gpu=$2
+prefix=runs_$3
+
+# ---train---
+CUDA_VISIBLE_DEVICES=$gpu python trainer.py $trainCollection $valCollection  --overwrite $overwrite\
+    --rootpath $rootpath --config $config  --model_prefix $prefix
+
+# ---test---
+model_path=$rootpath/$trainCollection/sea_train/$valCollection/$config/$prefix/model_best.pth.tar
+sim_name=$trainCollection/sea_train/$valCollection/$config/$prefix
 
 if [ ! -f "$model_path" ]; then
     echo "model not found: $model_path"
     exit
 fi
 
-gpu=$2
 CUDA_VISIBLE_DEVICES=$gpu python predictor.py $testCollection $model_path $sim_name \
     --query_sets $testCollection.caption.txt \
     --rootpath $rootpath  --overwrite $overwrite
 
-
+# done

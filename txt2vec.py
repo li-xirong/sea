@@ -229,6 +229,6 @@ if __name__ == '__main__':
 
     s2v = PrecomputedSentFeat('msvdtrain', 'bert_feature_Layer_-2_uncased_L-12_H-768_A-12', 'data')
     vecs = s2v.encoding(['ZbzDGXEwtGc_6_15#0', 'ZbzDGXEwtGc_6_15#1', 'ZbzDGXEwtGc_6_15#2'])
-    print vecs
-    print len(vecs)
+    print( vecs)
+    print (len(vecs))
     

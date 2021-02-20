@@ -1,8 +1,8 @@
 
 class config(object):
     model = 'w2vvpp'
-    # text_encoding = 'bow_nsw@w2v_nsw@gru_mean'
-    text_encoding = 'bow_nsw@precomputed_w2v@gru_mean'
+    text_encoding = 'bow_nsw@w2v_nsw@gru_mean'
+    # text_encoding = 'bow_nsw@precomputed_w2v@gru_mean'
     threshold = 5
     bow_norm = 0
     we_dim = 500

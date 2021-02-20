@@ -90,11 +90,11 @@ The dog runs
 dogs-x runs'''.split('\n')
 
     for t in test_strs:
-        print t, '->', TextTool.tokenize(t, clean=True, language='en'), '->', TextTool.tokenize(t, 'en', True)
+        print( t, '->', TextTool.tokenize(t, clean=True, language='en'), '->', TextTool.tokenize(t, 'en', True))
         
     test_strs = '''一间 干净 整洁 的 房间 。
 一只 黄色 的 小狗 趴在 长椅 上'''.split('\n')
     
     for t in test_strs:
-        print t, '->', ' '.join(TextTool.tokenize(t, clean=True, language='zh')), '->', ' '.join(TextTool.tokenize(t, 'zh', True))
+        print( t, '->', ' '.join(TextTool.tokenize(t, clean=True, language='zh')), '->', ' '.join(TextTool.tokenize(t, 'zh', True)))
     
