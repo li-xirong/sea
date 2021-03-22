@@ -90,10 +90,15 @@ def main():
         if hasattr(config, 'w2v_data_path'):
             w2v_data_path = config.w2v_data_path
         else:
-            w2v_data_path = os.path.join(rootpath, 'word2vec', 'flickr',
-                                         'vec500flickr30m')
+            w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
         w2v_feature_file = os.path.join(w2v_data_path, 'feature.bin')
         config.t2v_w2v.w2v.binary_file = w2v_feature_file
+    
+    cap_feat_names = []
+    for encoding in config.text_encoding.split('@'):
+        if 'precomputed_bert' in encoding:
+            cap_feat_names.append(config.bert_feat_name)
+
     # if hasattr(config, 'precomputed_feat_bert'):
     #     config.precomputed_feat_bert.binary_file = get_txt2vec('precomputed_bert')(trainCollection, config.bert_feat_name, rootpath)
 
@@ -169,13 +174,46 @@ def main():
         #    vis_embs, vis_ids = evaluation.encode_vis(model, vis_loader)
 
         capfile = os.path.join(rootpath, testCollection, 'TextData', query_set)
+        
+        cap_feat_file_paths = [os.path.join(rootpath, testCollection, 'TextData', 'PrecomputedSentFeat', cap_feat_name) for cap_feat_name in cap_feat_names]
+        
         # load text data
-        txt_loader = data.txt_provider({
+        # txt_loader = data.txt_provider({
+        #     'capfile': capfile,
+        #     'pin_memory': True,
+        #     'batch_size': opt.batch_size,
+        #     'num_workers': opt.num_workers
+        # })
+        
+        txt_loader = data.txt_provider_with_cap_feat({
             'capfile': capfile,
+            'cap_feature_names': cap_feat_names, 
+            'cap_feature_file_paths':cap_feat_file_paths,
             'pin_memory': True,
             'batch_size': opt.batch_size,
             'num_workers': opt.num_workers
         })
+
+        opt.save_embs = False
+        if opt.save_embs:
+            txt_embs, vis_embs = None, None
+            for i,(captions, _, _, cap_features) in enumerate(txt_loader):
+                txt_emb = model.txt_net(captions, cap_features)
+                # import pdb; pdb.set_trace()
+                txt_embs = txt_emb if i==0 else torch.cat((txt_embs, txt_emb), dim=0)
+                
+                
+            for j, (vis_input, _, _) in enumerate(vis_loader):
+                vis_emb = model.vis_net(vis_input).cpu()
+                vis_embs = vis_emb if j==0 else torch.cat((vis_embs, vis_emb), dim=0)
+            import pdb; pdb.set_trace()
+            txt_embeds_file = os.path.join(rootpath, testCollection, 'Emdebs', 'txt_embs.pth')
+            vis_embeds_file = os.path.join(rootpath, testCollection, 'Emdebs', 'vis_embs.pth')
+             
+            torch.save(txt_embs, txt_embeds_file)  
+            torch.save(vis_embs, vis_embeds_file)  
+            
+            exit(0)
 
         #logger.info('Encoding %s captions' % query_set)
         #txt_embs, txt_ids = evaluation.encode_txt(model, txt_loader)

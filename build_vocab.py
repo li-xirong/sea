@@ -19,7 +19,7 @@ from textlib import TextTool, Vocabulary
 
 def read_from_txt_file(cap_file):
     captions = []
-    with open(cap_file, 'rb') as fr:
+    with open(cap_file, 'r') as fr:
         for line in fr:
             cap_id, caption = line.split(' ', 1)
             captions.append(caption.strip())

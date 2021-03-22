@@ -146,6 +146,7 @@ def main():
         'train':
         os.path.join(rootpath, trainCollection, 'TextData', capfiles['train'])
     }
+    
 
     vis_feat_files = {
         x: BigFile(
@@ -172,13 +173,13 @@ def main():
     #     rootpath, 'encoder', 'infersent_fasttext_crawl-300d-2M.vec.pkl')
     w2v_data_path = os.path.join(rootpath, 'word2vec', 'flickr',
                                  'vec500flickr30m')
-    
+
     if hasattr(config, 'w2v_data_path'):
         w2v_data_path = config.w2v_data_path
     else:
-        w2v_data_path = os.path.join(rootpath, 'word2vec', 'flickr',
-                                 'vec500flickr30m')
+        w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
 
+    cap_feat_names = []
     for encoding in config.text_encoding.split('@'):
         if 'bow' in encoding:
             if opt.resume:
@@ -201,15 +202,32 @@ def main():
         # if 'infersent' in encoding:
         #     config.t2v_infer = get_txt2vec('infersent')(infer_model_file)
         if 'precomputed_bert' in encoding:
-            config.precomputed_feat_bert = get_txt2vec(
-                'precomputed_sent_feature')(trainCollection,
-                                            config.bert_feat_name, rootpath)
+            # config.precomputed_feat_bert = get_txt2vec(
+                # 'precomputed_sent_feature')(trainCollection,
+                #                             config.bert_feat_name, rootpath)
+        
+            cap_feat_names.append(config.bert_feat_name)
+
         if 'precomputed_w2v' in encoding:
-            config.precomputed_feat_w2v = get_txt2vec(
-                'precomputed_sent_feature')(trainCollection,
-                                            config.w2v_feat_name, rootpath)
+            pass
+            # config.precomputed_feat_w2v = get_txt2vec(
+                # 'precomputed_sent_feature')(trainCollection,
+                #                             config.w2v_feat_name, rootpath)
         elif 'w2v' in encoding:
             config.t2v_w2v = get_txt2vec(encoding)(w2v_data_path)
+
+    # config.cap_feature_file_paths = [os.path.join() for i in config.cap_feature_names]
+    
+    cap_feat_file_paths = {
+        'train':
+        [os.path.join(rootpath, trainCollection, 'TextData', 'PrecomputedSentFeat', cap_feat_name) for cap_feat_name in cap_feat_names]
+        ,
+        'val':
+        [os.path.join(rootpath, valCollection, 'TextData', 'PrecomputedSentFeat', cap_feat_name) for cap_feat_name in cap_feat_names]
+    }
+    print(cap_feat_names)
+    print(cap_feat_file_paths)
+    
 
     config.txt_fc_layers = list(map(int, config.txt_fc_layers.split('-')))
 
@@ -267,15 +285,27 @@ def main():
             'num_workers': opt.workers
         })
     else:
-        train_loader = data.pair_provider({
+        # train_loader = data.pair_provider({
+        #     'vis_feat': vis_feat_files['train'],
+        #     'capfile': cap_file_paths['train'],
+        #     'pin_memory': True,
+        #     'batch_size': opt.batch_size,
+        #     'num_workers': opt.workers,
+        #     'shuffle': True,
+        #     'caption_mask': caption_mask
+        # })
+        train_loader = data.pair_provider_with_cap_feat({
             'vis_feat': vis_feat_files['train'],
             'capfile': cap_file_paths['train'],
+            'cap_feature_names': cap_feat_names, 
+            'cap_feature_file_paths':cap_feat_file_paths['train'],
             'pin_memory': True,
             'batch_size': opt.batch_size,
             'num_workers': opt.workers,
             'shuffle': True,
             'caption_mask': caption_mask
         })
+        
 
         val_vis_loader = data.vis_provider({
             'vis_feat': vis_feat_files['val'],
@@ -297,12 +327,26 @@ def main():
         cap_file_paths['val'] = os.path.join(rootpath, valCollection,
                                              'TextData', val_set,
                                              '%s.caption.txt' % valCollection)
-        val_txt_loader = data.txt_provider({
+        
+        # val_txt_loader = data.txt_provider({
+        #     'capfile': cap_file_paths['val'],
+        #     'pin_memory': True,
+        #     'batch_size': opt.batch_size,
+        #     'num_workers': opt.workers
+        # })
+        val_txt_loader = data.txt_provider_with_cap_feat({
             'capfile': cap_file_paths['val'],
+            'cap_feature_names': cap_feat_names, 
+            'cap_feature_file_paths':cap_feat_file_paths['val'],
             'pin_memory': True,
             'batch_size': opt.batch_size,
             'num_workers': opt.workers
         })
+    
+    # for vis_feats, captions, idxs, vis_ids, cap_ids, cap_features in train_loader:
+    #     import pdb; pdb.set_trace()
+    # for captions, idxs, cap_ids, cap_features in val_txt_loader:
+    #     import pdb; pdb.set_trace()
 
     if opt.evaluate:
         resume_file = os.path.join(model_path, 'model_best.pth.tar')
@@ -427,10 +471,11 @@ def train(model, train_loader, fw=None):
 
         data_time.update(time.time() - end)
 
-        vis_input, txt_input, _, vis_ids, cap_ids = train_data
-        loss, indices_im = model.train(txt_input, cap_ids, vis_input, vis_ids)
+        vis_feats, captions, _, vis_ids, cap_ids, cap_features = train_data
+        # loss, indices_im = model.train(txt_input, cap_ids, vis_input, vis_ids)
+        loss, indices_im = model.train(captions, cap_ids, cap_features, vis_feats, vis_ids)
 
-        progbar.add(len(vis_input),
+        progbar.add(len(vis_feats),
                     values=[('data_time', data_time.val),
                             ('batch_time', batch_time.val), ('loss', loss)])
 
@@ -474,7 +519,8 @@ def validate(model, val_loader, epoch, metric='mir'):
         label_matrix[index][np.where(
             np.array(vis_ids)[ind] == txt_ids[index].split('#')[0])[0]] = 1
 
-    (r1, r5, r10, medr, meanr, mir, mAP) = evaluation.eval(label_matrix)
+    (r1, r5, r10, medr, meanr, mir, mAP,
+     negRank) = evaluation.eval(label_matrix)
     sum_recall = r1 + r5 + r10
     print(" * Text to video:")
     print(" * r_1_5_10: {}".format([round(r1, 3),

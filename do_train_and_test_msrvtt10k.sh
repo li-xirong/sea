@@ -1,14 +1,15 @@
 # rootpath=$HOME/VisualSearch
 rootpath=data
 overwrite=0
-trainCollection=msvdtrain
-valCollection=msvdval
-testCollection=msvdtest
+trainCollection=msrvtt10ktrain
+valCollection=msrvtt10kval
+testCollection=msrvtt10ktest
 
 # for option in 11 12 21 22 31 32 41 42 51 52 61 62;
 # do
 
 case $1 in
+
 11)
     config=w2vvpp_resnext101-resnet152_subspace_bow_w2v
     ;;
