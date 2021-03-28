@@ -51,8 +51,8 @@ esac
 
 NO=$3
 prefix=runs_$NO
-model_path=$rootpath/msvdtrain/sea_train/msvdval/$config/$prefix/model_best.pth.tar
-sim_name=msvdtrain/sea_train/msvdval/$config/$prefix
+model_path=$rootpath/$trainCollection/sea_train/$valCollection/$config/$prefix/model_best.pth.tar
+sim_name=$trainCollection/sea_train/$valCollection/$config/$prefix
 
 if [ ! -f "$model_path" ]; then
     echo "model not found: $model_path"

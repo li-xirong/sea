@@ -220,10 +220,10 @@ def main():
     
     cap_feat_file_paths = {
         'train':
-        [os.path.join(rootpath, trainCollection, 'TextData', 'PrecomputedSentFeat', cap_feat_name) for cap_feat_name in cap_feat_names]
+        [os.path.join(rootpath, trainCollection, 'TextData', val_set,'PrecomputedSentFeat', cap_feat_name) for cap_feat_name in cap_feat_names]
         ,
         'val':
-        [os.path.join(rootpath, valCollection, 'TextData', 'PrecomputedSentFeat', cap_feat_name) for cap_feat_name in cap_feat_names]
+        [os.path.join(rootpath, valCollection, 'TextData', val_set, 'PrecomputedSentFeat', cap_feat_name) for cap_feat_name in cap_feat_names]
     }
     print(cap_feat_names)
     print(cap_feat_file_paths)

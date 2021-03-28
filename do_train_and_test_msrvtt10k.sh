@@ -52,6 +52,28 @@ case $1 in
 101)
     config=w2vvpp_resnext101-resnet152_multispace_bow_w2v_lightw2vmodeltest_threshold5
     ;;
+102)
+    config=w2vvpp_resnext101-resnet152_subspace_bow_w2v_finetunebert
+    ;;
+103)
+    config=w2vvpp_resnext101-resnet152_multispace_bow_w2v_finetunebert
+    ;;
+
+104)
+    config=w2vvpp_resnext101-resnet152_subspace_bow_w2v_gru_finetunebert
+    ;;
+105)
+    config=w2vvpp_resnext101-resnet152_multispace_bow_w2v_gru_finetunebert
+    ;;
+106)
+    config=w2vvpp_resnext101-resnet152_subspace_bow_w2v_bigru_finetunebert    
+    ;;
+107)
+    config=w2vvpp_resnext101-resnet152_multispace_bow_w2v_bigru_finetunebert
+    ;;
+
+
+
 *)
     config=-1
     ;;
@@ -63,6 +85,7 @@ prefix=runs_$3
 # ---train---
 CUDA_VISIBLE_DEVICES=$gpu python trainer.py $trainCollection $valCollection --overwrite $overwrite --rootpath $rootpath --config $config --model_prefix $prefix
 #exit
+
 # ---test---
 model_path=$rootpath/$trainCollection/sea_train/$valCollection/$config/$prefix/model_best.pth.tar
 sim_name=$trainCollection/sea_train/$valCollection/$config/$prefix

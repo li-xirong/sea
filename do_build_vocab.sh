@@ -1,6 +1,11 @@
 
-train_collection='tgif-msrvtt10k-vatex'
-train_collection='msrvtt10ktrain'
+if [ "$#" -ne 1 ]; then
+    echo "usage: $0 trainCollection"
+fi
+
+train_collection=$1
+#train_collection='msrvtt10ktrain'
+
 overwrite=0
 root_path='data'
 

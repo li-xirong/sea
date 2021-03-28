@@ -45,7 +45,7 @@ def parse_args():
         'test query sets,  tv16.avs.txt,tv17.avs.txt,tv18.avs.txt for TRECVID 16/17/18 and tv19.avs.txt for TRECVID19.'
     )
     parser.add_argument('--batch_size',
-                        default=128 * 8,
+                        default=128,
                         type=int,
                         help='size of a predicting mini-batch.')
     parser.add_argument('--num_workers',
@@ -62,6 +62,11 @@ def parse_args():
         type=str,
         default='mean_pyresnext-101_rbps13k',
         help='model configuration file. (default: mean_pyresnext-101_rbps13k')
+    parser.add_argument(
+        '--save_ranking_result',
+        type=bool,
+        default=False,
+        help='whether to save the similarity ranking result after prediction')
 
     args = parser.parse_args()
     return args
@@ -90,7 +95,8 @@ def main():
         if hasattr(config, 'w2v_data_path'):
             w2v_data_path = config.w2v_data_path
         else:
-            w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
+            w2v_data_path = os.path.join(rootpath, 'word2vec', 'flickr', 'vec500flickr30m')
+            # w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
         w2v_feature_file = os.path.join(w2v_data_path, 'feature.bin')
         config.t2v_w2v.w2v.binary_file = w2v_feature_file
     
@@ -174,8 +180,10 @@ def main():
         #    vis_embs, vis_ids = evaluation.encode_vis(model, vis_loader)
 
         capfile = os.path.join(rootpath, testCollection, 'TextData', query_set)
-        
-        cap_feat_file_paths = [os.path.join(rootpath, testCollection, 'TextData', 'PrecomputedSentFeat', cap_feat_name) for cap_feat_name in cap_feat_names]
+        if testCollection in ['v3c1', 'iacc.3']:
+            cap_feat_file_paths = [os.path.join(rootpath, testCollection, 'TextData', 'PrecomputedSentFeat', '%s.%s'%(query_set, cap_feat_name)) for cap_feat_name in cap_feat_names]
+        else:
+            cap_feat_file_paths = [os.path.join(rootpath, testCollection, 'TextData', 'PrecomputedSentFeat', cap_feat_name) for cap_feat_name in cap_feat_names]
         
         # load text data
         # txt_loader = data.txt_provider({
@@ -225,10 +233,10 @@ def main():
         t2i_matrix, txt_ids, vis_ids = model.predict(txt_loader, vis_loader)
         inds = np.argsort(t2i_matrix, axis=1)
 
-        if testCollection in [
-                'msrvtt10ktest', 'tv2016train', 'ht100mmsrvtt10ktest',
-                'meemsrvtt10ktest', 'msvdtest'
-        ]:
+        if testCollection not in ['iacc.3', 'v3c1']:
+                # 'msrvtt10ktest', 'tv2016train', 'ht100mmsrvtt10ktest',
+                # 'meemsrvtt10ktest', 'msvdtest', 'tgiftest'
+        
             label_matrix = np.zeros(inds.shape)
             for index in range(inds.shape[0]):
                 ind = inds[index][::-1]
@@ -277,7 +285,8 @@ def main():
             print(tempStr)
             open(os.path.join(output_dir, 'perf.txt'), 'w').write(tempStr)
             util.perf_txt_to_excel('perf_pattern.txt', output_dir) # perf.txt to perf.xlsx
-            return
+            if not opt.save_ranking_result:
+                return
 
         start = time.time()
         logger.info('Save result ...')
