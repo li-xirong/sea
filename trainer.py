@@ -171,13 +171,15 @@ def main():
 
     # infer_model_file = os.path.join(
     #     rootpath, 'encoder', 'infersent_fasttext_crawl-300d-2M.vec.pkl')
-    w2v_data_path = os.path.join(rootpath, 'word2vec', 'flickr',
-                                 'vec500flickr30m')
+    
+    # w2v_data_path = os.path.join(rootpath, 'word2vec', 'flickr',
+    #                              'vec500flickr30m')
+    w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
 
-    if hasattr(config, 'w2v_data_path'):
-        w2v_data_path = config.w2v_data_path
-    else:
-        w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
+    # if hasattr(config, 'w2v_data_path'):
+    #     w2v_data_path = config.w2v_data_path
+    # else:
+    #     w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
 
     cap_feat_names = []
     for encoding in config.text_encoding.split('@'):
