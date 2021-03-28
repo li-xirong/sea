@@ -1,9 +1,3 @@
-# --------------------------------------------------------
-# Pytorch W2VV++
-# Written by Xirong Li & Chaoxi Xu
-# --------------------------------------------------------
-
-from __future__ import print_function
 import pickle
 from collections import Counter
 import os

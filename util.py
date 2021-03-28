@@ -5,7 +5,6 @@ import logging
 from functools import wraps
 from collections import OrderedDict
 
-
 logger = logging.getLogger(__file__)
 logging.basicConfig(
     format="[%(asctime)s - %(filename)s:line %(lineno)s] %(message)s",

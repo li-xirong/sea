@@ -1,10 +1,3 @@
-'''
-# --------------------------------------------------------
-# Pytorch W2VV++
-# Written by Xirong Li & Chaoxi Xu
-# --------------------------------------------------------
-'''
-
 import os
 import sys
 import time
@@ -119,14 +112,6 @@ def main():
     val_set = opt.val_set
     config = load_config('configs.%s' % opt.config_name)
 
-    # for netVlad Parameter Experiment
-    if opt.nVclusters != 32:
-        config.netvlad_num_clusters = opt.nVclusters
-    if opt.nValpha != 100:
-        config.netvlad_alpha = opt.nValpha
-    if opt.nVnormalize_pooling != 0:
-        config.netvlad_normalize_pooling = True
-
     model_path = os.path.join(rootpath, trainCollection, 'sea_train',
                               valCollection, val_set, opt.config_name,
                               opt.model_prefix)
@@ -169,57 +154,36 @@ def main():
                                       'vocab',
                                       'gru_%d.pkl' % (config.threshold))
 
-    # infer_model_file = os.path.join(
-    #     rootpath, 'encoder', 'infersent_fasttext_crawl-300d-2M.vec.pkl')
-    
-    # w2v_data_path = os.path.join(rootpath, 'word2vec', 'flickr',
-    #                              'vec500flickr30m')
     w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
 
-    # if hasattr(config, 'w2v_data_path'):
-    #     w2v_data_path = config.w2v_data_path
-    # else:
-    #     w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
+
 
     cap_feat_names = []
     for encoding in config.text_encoding.split('@'):
         if 'bow' in encoding:
             if opt.resume:
-                # resume_trainCollection = opt.resume.strip('/').split('/')[len(rootpath.strip('/').split('/'))]
-                # bow_vocab_file = os.path.join(rootpath, resume_trainCollection, 'TextData', 'vocab', '%s_%d.pkl'%(encoding, config.threshold))
-                resume_trainCollection = 'gcc11train'
-                bow_vocab_file = "/home/zhoufm/VisualSearch/gcc11train/TextData/vocab/bow_nsw_5.pkl"
-                print(resume_trainCollection, bow_vocab_file)
+                resume_trainCollection = opt.resume.strip('/').split('/')[len(rootpath.strip('/').split('/'))]
+                bow_vocab_file = os.path.join(rootpath, resume_trainCollection, 'TextData', 'vocab', '%s_%d.pkl'%(encoding, config.threshold))
+
             else:
                 bow_vocab_file = os.path.join(
                     rootpath, trainCollection, 'TextData', 'vocab',
                     '%s_%d.pkl' % (encoding, config.threshold))
             config.t2v_bow = get_txt2vec(encoding)(bow_vocab_file,
                                                    norm=config.bow_norm)
+                                                   
         if 'gru' in encoding or 'lstm' in encoding:
             rnn_encoding, config.pooling = encoding.split('_', 1)
             config.t2v_idx = get_txt2vec('idxvec')(rnn_vocab_file)
             if config.we_dim == 500:
                 config.we = get_we(config.t2v_idx.vocab, w2v_data_path)
-        # if 'infersent' in encoding:
-        #     config.t2v_infer = get_txt2vec('infersent')(infer_model_file)
-        if 'precomputed_bert' in encoding:
-            # config.precomputed_feat_bert = get_txt2vec(
-                # 'precomputed_sent_feature')(trainCollection,
-                #                             config.bert_feat_name, rootpath)
-        
+
+        if 'precomputed_bert' in encoding:      
             cap_feat_names.append(config.bert_feat_name)
 
-        if 'precomputed_w2v' in encoding:
-            pass
-            # config.precomputed_feat_w2v = get_txt2vec(
-                # 'precomputed_sent_feature')(trainCollection,
-                #                             config.w2v_feat_name, rootpath)
-        elif 'w2v' in encoding:
+        if 'w2v' in encoding:
             config.t2v_w2v = get_txt2vec(encoding)(w2v_data_path)
-
-    # config.cap_feature_file_paths = [os.path.join() for i in config.cap_feature_names]
-    
+ 
     cap_feat_file_paths = {
         'train':
         [os.path.join(rootpath, trainCollection, 'TextData', val_set,'PrecomputedSentFeat', cap_feat_name) for cap_feat_name in cap_feat_names]
@@ -227,9 +191,6 @@ def main():
         'val':
         [os.path.join(rootpath, valCollection, 'TextData', val_set, 'PrecomputedSentFeat', cap_feat_name) for cap_feat_name in cap_feat_names]
     }
-    print(cap_feat_names)
-    print(cap_feat_file_paths)
-    
 
     config.txt_fc_layers = list(map(int, config.txt_fc_layers.split('-')))
 
@@ -255,7 +216,7 @@ def main():
 
     caption_mask = ('caption_mask' in opt.config_name)
     logger.info('caption mask: %s' % caption_mask)
-    #data_loaders = {x: data.frame_pair_provider({'vis_feat':vis_feat_files[x], 'capfile':cap_file_paths[x], 'pin_memory': True,
+
     val_vis_ids = list(
         map(
             str.strip,
@@ -345,11 +306,6 @@ def main():
             'num_workers': opt.workers
         })
     
-    # for vis_feats, captions, idxs, vis_ids, cap_ids, cap_features in train_loader:
-    #     import pdb; pdb.set_trace()
-    # for captions, idxs, cap_ids, cap_features in val_txt_loader:
-    #     import pdb; pdb.set_trace()
-
     if opt.evaluate:
         resume_file = os.path.join(model_path, 'model_best.pth.tar')
         assert os.path.exists(resume_file), '%s not exists' % resume_file
@@ -399,9 +355,7 @@ def main():
                                                 model.learning_rate))
         print('-' * 10)
         writer.add_scalar('train/learning_rate', model.learning_rate[0], epoch)
-        # train for one epoch
-        #cur_perf = validate(model, data_loaders['val'], epoch, metric=opt.metric)
-        #print(' * Current perf: {}\n * Best perf: {}\n'.format(cur_perf, best_perf))
+
         if opt.save_negative:
             with open(os.path.join(model_path, 'max_negative_%d.txt' % epoch),
                       'w') as fw:
@@ -551,27 +505,19 @@ def validate_v2(model, txt_loader, vis_loader, epoch, metric='mir'):
     ## Multi-Space
     txt2vis_sim, txt_ids, vis_ids = model.predict(txt_loader, vis_loader)
 
-    # print(len(txt_ids), type(txt_ids))
-    # print("txt_ids:", txt_ids)
-    # print(len(vis_ids), type(vis_ids))
-    # print("vis_ids:", vis_ids)
-
     assert txt2vis_sim.shape == (len(txt_ids), len(vis_ids)), 'txt2vis_sim.shape%s not match (txt_ids(%s),vis_ids(%s))' % \
             (txt2vis_sim.shape, len(txt_ids), len(vis_ids))
 
-    inds = np.argsort(txt2vis_sim, axis=1)  # 按行升序排序，返回索引下标
+    inds = np.argsort(txt2vis_sim, axis=1)  
 
     # print(inds.shape) size:200*200
     # print("\n inds: \n", inds) #test
 
     label_matrix = np.zeros(inds.shape)
-    for index in range(inds.shape[0]):  # 循环每一行
-        ind = inds[index][::-1]  # 每一行翻转后变为降序
+    for index in range(inds.shape[0]):  
+        ind = inds[index][::-1]  
         label_matrix[index][np.where(
             np.array(vis_ids)[ind] == txt_ids[index].split('#')[0])[0]] = 1
-
-    # print(label_matrix.shape) size:200*200
-    # print("\n label_matrix: \n", label_matrix) #test
 
     (r1, r5, r10, medr, meanr, mir, mAP,
      negRank) = evaluation.eval(label_matrix)
