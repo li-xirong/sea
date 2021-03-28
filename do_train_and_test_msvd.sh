@@ -5,8 +5,9 @@ trainCollection=msvdtrain
 valCollection=msvdval
 testCollection=msvdtest
 
+option=$1
 
-case $1 in
+case $option in
 11)
     config=w2vvpp_resnext101-resnet152_subspace_bow_w2v
     ;;
