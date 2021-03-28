@@ -127,5 +127,4 @@ def perf_txt_to_excel(pattern_file_path, perf_file_dir):
     logger.info('perf.txt has transformed into excel file: %s' % (excel_file_path))
 
 if __name__ == '__main__':
-    perf_txt_to_excel('/home/zhoufm/github/sea/perf_pattern.txt',
-                      '/home/zhoufm/github/sea/data/msvdtest/SimilarityIndex/msvdtest.caption.txt/msvdtrain/sea_train/msvdval/w2vvpp_resnext101-resnet152_multispace_bow_w2v/runs_0')
+    pass
