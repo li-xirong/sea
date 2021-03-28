@@ -5,8 +5,6 @@ trainCollection=msvdtrain
 valCollection=msvdval
 testCollection=msvdtest
 
-# for option in 11 12 21 22 31 32 41 42 51 52 61 62;
-# do
 
 case $1 in
 11)
@@ -45,12 +43,6 @@ case $1 in
 62)
     config=w2vvpp_resnext101-resnet152_multispace_bow_w2v_bigru_bert
     ;;
-100)
-    config=w2vvpp_resnext101-resnet152_multispace_bow_w2v_lightw2vmodeltest_threshold1
-    ;;
-101)
-    config=w2vvpp_resnext101-resnet152_multispace_bow_w2v_lightw2vmodeltest_threshold5
-    ;;
 *)
     config=-1
     ;;
@@ -74,5 +66,3 @@ fi
 CUDA_VISIBLE_DEVICES=$gpu python predictor.py $testCollection $model_path $sim_name \
     --query_sets $testCollection.caption.txt \
     --rootpath $rootpath --overwrite $overwrite
-
-# done

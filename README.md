@@ -63,13 +63,6 @@ Sentence encoder | Model | R@1 | R@5 | R@5 | Med r | mAP|
 ||SEA|13.1 |33.4| 45.0| 14 |23.3(↑6.9%)|
 
 
-Model | TV19|
-|--- | ---|
-|w2vvpp_resnext101_resnet152_subspace_v190916 | 0.139|
-
-Note that due to SGD based training, the performance of a single model learned from scratch might differ slightly from those reported in the ACMMM'19 paper. For better and stable performance, ensemble is suggested.
-to do
-
 ## SEA on AVS
 to do
 
@@ -85,7 +78,7 @@ to do
 _____
 _____
 
-
+<!-- 
 ## Data
 
 The sentence encoding network for W2VV++, namely ```MultiScaleTxtEncoder```, needs a pretrained word2vec (w2v) model. In this work, we use a w2v trained on English tags associated with 30 million Flickr images.  Run the following script to download the Flickr w2v model and extract the folder at $HOME/VisualSearch/. The zipped model is around 3.1 gigabytes, so the download may take a while.
@@ -226,4 +219,4 @@ cd tv-avs-eval
   journal={IEEE Transactions on Multimedia}, 
   year={2020},
   doi={10.1109/TMM.2020.3042067}}
-```
+``` -->

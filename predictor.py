@@ -95,8 +95,8 @@ def main():
         if hasattr(config, 'w2v_data_path'):
             w2v_data_path = config.w2v_data_path
         else:
-            w2v_data_path = os.path.join(rootpath, 'word2vec', 'flickr', 'vec500flickr30m')
-            # w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
+            # w2v_data_path = os.path.join(rootpath, 'word2vec', 'flickr', 'vec500flickr30m')
+            w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
         w2v_feature_file = os.path.join(w2v_data_path, 'feature.bin')
         config.t2v_w2v.w2v.binary_file = w2v_feature_file
     
