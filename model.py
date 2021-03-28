@@ -1662,18 +1662,27 @@ class BertModel (W2VVPP):
 
 NAME_TO_MODELS = {'w2vvpp': W2VVPP, 'multispace': MultiSpaceModel, 
                   'bow': BoWModel, 'w2v': W2VModel, 'gru': GRUModel, 'bigru': BiGruModel, 'bert': BertModel,
-                #   'w2vv': W2VV, 'w2v_netvlad': W2V_NetVLADModel,
-                #   'w2vv_bert_bigru_w2v_bow': W2VV_bert_bigru_w2v_bow,
-                  
-                #   'multiscale_bigru_netvlad_bow': MultiScaleModel_bigru_netvlad_bow,
-                #   'multiscale_gru_w2v_softbow': MultiScaleModel_gru_w2v_softbow,
+
                   'multiscale_w2v_bow': MultiScaleModel_w2v_bow,
                   'multiscale_gru_w2v_bow': W2VVPP,
                   'multiscale_bigru_w2v_bow':  MultiScaleModel_bigru_w2v_bow,
                   'multiscale_bert_w2v_bow': MultiScaleModel_bert_w2v_bow,
                   'multiscale_bert_gru_w2v_bow': MultiScaleModel_bert_gru_w2v_bow,
                   'multiscale_bert_bigru_w2v_bow': MultiScaleModel_bert_bigru_w2v_bow,
+
+                  'multispace_bow_w2v': MultiSpaceModel_bow_w2v, 
+                  'multispace_bow_w2v_gru': MultiSpaceModel_bow_w2v_gru,
+                  'multispace_bow_w2v_bigru': MultiSpaceModel_bow_w2v_bigru,
+                  'multispace_bow_w2v_bert': MultiSpaceModel_bow_w2v_bert,
+                  'multispace_bow_w2v_gru_bert': MultiSpaceModel_bow_w2v_gru_bert,
+                  'multispace_bow_w2v_bigru_bert': MultiSpaceModel_bow_w2v_bigru_bert,
+
+                #   'w2vv': W2VV, 'w2v_netvlad': W2V_NetVLADModel,
+                #   'w2vv_bert_bigru_w2v_bow': W2VV_bert_bigru_w2v_bow,
                   
+                #   'multiscale_bigru_netvlad_bow': MultiScaleModel_bigru_netvlad_bow,
+                #   'multiscale_gru_w2v_softbow': MultiScaleModel_gru_w2v_softbow,
+                 
                 #   'multiscale_netvlad_bow': MultiScaleModel_netvlad_bow,
                 #   'multiscale_lstm_w2v_bow': MultiScaleModel_lstm_w2v_bow,
                 #   'multiscale_infersent_w2v_bow': MultiScaleModel_infersent_w2v_bow,
@@ -1683,22 +1692,14 @@ NAME_TO_MODELS = {'w2vvpp': W2VVPP, 'multispace': MultiSpaceModel,
                                     
                 #   'onelossmultispace_bow_w2v_gru': OneLossMultiSpaceModel_bow_w2v_gru, 'w2vvpp_vlad': W2VVPP_VLAD,
                 #   'onelossmultispace_bow_w2v': OneLossMultiSpaceModel_bow_w2v,
-                  
-                  
+                                   
                 #   'multispace_bow_netvlad': MultiSpaceModel_bow_netvlad,
                 #   'multispace_bow_netvlad_bigru': MultiSpaceModel_bow_netvlad_bigru,
                 #   'multispace_bow_w2v_lstm': MultiSpaceModel_bow_w2v_lstm, 
                 #   'multispace_visnetvlad_bow_w2v': MultiSpaceModel_visnetvlad_bow_w2v,
                 #   'multispace_bow_gru': MultiSpaceModel_bow_gru, 
                 #   'multispace_w2v_gru': MultiSpaceModel_w2v_gru, \
-
-                  'multispace_bow_w2v': MultiSpaceModel_bow_w2v, 
-                  'multispace_bow_w2v_gru': MultiSpaceModel_bow_w2v_gru,
-                  'multispace_bow_w2v_bigru': MultiSpaceModel_bow_w2v_bigru,
-                  'multispace_bow_w2v_bert': MultiSpaceModel_bow_w2v_bert,
-                  'multispace_bow_w2v_gru_bert': MultiSpaceModel_bow_w2v_gru_bert,
-                  'multispace_bow_w2v_bigru_bert': MultiSpaceModel_bow_w2v_bigru_bert,
-                  
+                 
                 #   'multispace_softbow_w2v_gru': MultiSpaceModel_softbow_w2v_gru,
                 #   'multispace_softbow_w2v_bigru': MultiSpaceModel_softbow_w2v_bigru,
                 #   'multispace_bow_w2v_infersent': MultiSpaceModel_bow_w2v_infersent,
