@@ -84,13 +84,6 @@ def parse_args():
                         default=0,
                         choices=[0, 1],
                         help='whether save negative examples during training')
-    # for netVlad Parameter Experiment
-    parser.add_argument('--nVclusters', type=int, default=32)
-    parser.add_argument('--nValpha', type=int, default=100)
-    parser.add_argument('--nVnormalize_pooling',
-                        type=int,
-                        default=0,
-                        choices=[0, 1])
 
     args = parser.parse_args()
     return args
@@ -204,7 +197,7 @@ def main():
     if hasattr(config, 'model'):
         model = get_model(config.model)(config)
     else:
-        model = get_model('w2vvpp')(config)
+        model = get_model('sea_bow_w2v')(config)
     print(model.vis_net)
     print(model.txt_net)
     vis_net_params = sum(p.numel() for p in model.vis_net.parameters())

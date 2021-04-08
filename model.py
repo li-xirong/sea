@@ -367,15 +367,11 @@ class BertTxtEncoder(TxtEncoder):
 
     def forward(self, captions, cap_features):
         if self.is_precomputed:
-            # import pdb; pdb.set_trace()
             bert_out = torch.Tensor([
                 cap_feature[self.bert_feature_name]
                 for cap_feature in cap_features
             ]).to(device)
-            # import pdb; pdb.set_trace()
-            # bert_out = torch.Tensor( self.id2v.encoding(cap_ids)).to(device)
         else:
-            # captions = list(captions)
             bert_out = torch.Tensor(self.bc.encode(captions)).to(device)
         return bert_out
 
@@ -627,35 +623,6 @@ class MultiSpaceTxtNet_w2v_gru(nn.Module):
         feature_g = self.txt_net_g(captions, cap_features)
 
         return feature_w, feature_g
-
-
-# Deprecated model
-class OneLossMultiSpaceTxtNet(nn.Module):
-    def __init__(self, opt):
-        super().__init__()
-
-        opt.txt_fc_layers[0] = opt.t2v_bow.ndims
-        self.txt_net_b1 = BoWTxtNet(opt)
-        self.txt_net_b2 = BoWTxtNet(opt)
-
-        opt.txt_fc_layers[0] = opt.w2v_out_size
-        self.txt_net_w1 = W2VTxtNet(opt)
-        self.txt_net_w2 = W2VTxtNet(opt)
-
-        opt.txt_fc_layers[
-            0] = opt.rnn_size * 2 if opt.pooling == 'mean_last' else opt.rnn_size
-        self.txt_net_g1 = GruTxtNet(opt)
-        self.txt_net_g2 = GruTxtNet(opt)
-
-    def forward(self, captions, cap_features):
-        feature_b1 = self.txt_net_b1(captions)
-        feature_b2 = self.txt_net_b2(captions)
-        feature_w1 = self.txt_net_w1(captions)
-        feature_w2 = self.txt_net_w2(captions)
-        feature_g1 = self.txt_net_g1(captions)
-        feature_g2 = self.txt_net_g2(captions)
-
-        return feature_b1, feature_w1, feature_g1, feature_b2, feature_w2, feature_g2
 
 
 class MultiSpaceVisNet(nn.Module):

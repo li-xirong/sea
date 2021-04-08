@@ -116,7 +116,7 @@ def main():
     if hasattr(config, 'model'):
         model = get_model(config.model)(config)
     else:
-        model = get_model('w2vvpp')(config)
+        model = get_model('sea_bow_w2v')(config)
     print(model.vis_net)
     print(model.txt_net)
     vis_net_params = sum(p.numel() for p in model.vis_net.parameters())
@@ -125,14 +125,13 @@ def main():
     print('    TxtNet params: %.2fM' % (txt_net_params / 1000000.0))
     print('    Total params: %.2fM' %
           ((vis_net_params + txt_net_params) / 1000000.0))
-    # print(model.state_dict())
-    # print( checkpoint['model'])
-    # return
+
+
     model.load_state_dict(checkpoint['model'])
     print("=> loaded checkpoint '{}' (epoch {}, best_perf {})".format(
         resume_file, epoch, best_perf))
 
-    #config.vid_feat = 'pyresnext-101_rbps13k,flatten0_output,os+pyresnet-152_imagenet11k,flatten0_output,os'
+
     vis_feat_file = BigFile(
         os.path.join(rootpath, testCollection, 'FeatureData', config.vid_feat))
 
@@ -142,8 +141,6 @@ def main():
             open(
                 os.path.join(rootpath, testCollection, 'VideoSets',
                              testCollection + '.txt'))))
-    # vis_ids = map(str.strip, open("/data/home/zhoufm/VisualSearch/v3c1/VideoSets/v3c1_of_two_people_kissing.txt"))
-    # print ("vis_ids", "/data/home/zhoufm/VisualSearch/v3c1/VideoSets/v3c1_of_two_people_kissing.txt")
 
     if hasattr(config,
                'model') and config.model in ['multispace_visnetvlad_bow_w2v']:
@@ -173,10 +170,6 @@ def main():
         if util.checkToSkip(pred_result_file, opt.overwrite):
             continue
         util.makedirs(output_dir)
-
-        #if vis_embs is None:
-        #    logger.info('Encoding videos')
-        #    vis_embs, vis_ids = evaluation.encode_vis(model, vis_loader)
 
         capfile = os.path.join(rootpath, testCollection, 'TextData', query_set)
         if testCollection in ['v3c1', 'iacc.3']:
@@ -221,12 +214,6 @@ def main():
             torch.save(vis_embs, vis_embeds_file)  
             
             exit(0)
-
-        #logger.info('Encoding %s captions' % query_set)
-        #txt_embs, txt_ids = evaluation.encode_txt(model, txt_loader)
-
-        #t2i_matrix = evaluation.compute_sim(txt_embs, vis_embs, measure=config.measure)
-        #inds = np.argsort(t2i_matrix, axis=1)
 
         logger.info('Model prediction ...')
         t2i_matrix, txt_ids, vis_ids = model.predict(txt_loader, vis_loader)
