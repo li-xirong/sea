@@ -1,22 +1,14 @@
 
 class config(object):
-    model = 'multispace_bow_w2v_bert'
-    # text_encoding = 'bow_nsw@w2v_nsw@precomputed_bert@'
-    # text_encoding = 'bow_nsw@w2v_nsw@online_bert'
-    text_encoding = 'bow_nsw@precomputed_bert@precomputed_w2v'
+    model = 'SEA_bow_w2v_bigru'
+    
+    text_encoding = 'bow_nsw@w2v_nsw@bigru_mean'
     threshold = 5
     bow_norm = 0
     we_dim = 500
     rnn_size = 1024
     rnn_layer = 1
 
-    w2v_out_size = 500
-    w2v_feat_name = 'word2vec_flickr_vec500flickr30m_nsw/'
-
-    bert_out_size = 768
-    bert_feat_name = 'bert_feature_Layer_-2_uncased_L-12_H-768_A-12'
-    
-    
     txt_fc_layers = '0-2048'
     txt_norm = 2 # L_2 norm
     use_abs = False

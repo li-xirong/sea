@@ -5,7 +5,6 @@ import logging
 from functools import wraps
 from collections import OrderedDict
 
-
 logger = logging.getLogger(__file__)
 logging.basicConfig(
     format="[%(asctime)s - %(filename)s:line %(lineno)s] %(message)s",
@@ -90,7 +89,7 @@ class LogCollector(object):
         """Concatenate the meters in one log line
         """
         s = ''
-        for i, (k, v) in enumerate(self.meters.iteritems()):
+        for i, (k, v) in enumerate(self.meters.items()):
             if i > 0:
                 s += '  '
             s += k + ' ' + str(v)
@@ -99,5 +98,33 @@ class LogCollector(object):
     def tb_log(self, tb_logger, prefix='', step=None):
         """Log using tensorboard
         """
-        for k, v in self.meters.iteritems():
+        for k, v in self.meters.items():
             tb_logger.add_scalar(prefix + k, v.val, step=step)
+
+
+def perf_txt_to_excel(pattern_file_path, perf_file_dir):
+
+    perf_file_path = os.path.join(perf_file_dir, 'perf.txt')
+    excel_file_path = os.path.join(perf_file_dir, 'perf.xlsx')
+    with open(pattern_file_path, 'r') as fr:
+        pattern = fr.read()
+    with open(perf_file_path, 'r') as fr:
+        text = fr.read()
+    from scanf import scanf
+    pef_num_list = scanf(pattern, text)
+    pef_num_list = list(map(str, pef_num_list))
+
+    from openpyxl import Workbook
+    workbook = Workbook()
+    booksheet = workbook.active     
+    titles = [['Text to video', '', '', '', '', '', '', 'Video to text', '', '', '', '', '', ''],['r1', 'r5', 'r10', 'medr', 'meanr', 'mir', 'mAP', 'r1', 'r5', 'r10', 'medr', 'meanr', 'mir', 'mAP']]
+    for line, title_line in enumerate(titles):
+        booksheet.append(title_line) 
+    booksheet.append(pef_num_list)
+    workbook.save(filename=excel_file_path)
+
+    from common import logger
+    logger.info('perf.txt has transformed in excel file: %s' % (excel_file_path))
+
+if __name__ == '__main__':
+    pass

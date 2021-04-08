@@ -1,0 +1,10 @@
+ * Text to video:
+ * r_1_5_10: [%f, %f, %f]
+ * medr, meanr, mir: [%f, %f, %f]
+ * mAP: %f
+ * ----------
+ * Video to text:
+ * r_1_5_10: [%f, %f, %f]
+ * medr, meanr, mir: [%f, %f, %f]
+ * mAP: %f
+ * ----------

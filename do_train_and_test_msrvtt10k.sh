@@ -1,8 +1,8 @@
 rootpath=$HOME/VisualSearch
 overwrite=0
-trainCollection=msvdtrain
-valCollection=msvdval
-testCollection=msvdtest
+trainCollection=msrvtt10ktrain
+valCollection=msrvtt10kval
+testCollection=msrvtt10ktest
 
 if [ "$#" -ne 2];then
     echo "Usage: $0 config gpuID"
@@ -23,6 +23,7 @@ prefix=runs_0
 # ---train---
 CUDA_VISIBLE_DEVICES=$gpu python trainer.py $trainCollection $valCollection --overwrite $overwrite --rootpath $rootpath --config $config --model_prefix $prefix
 #exit
+
 # ---test---
 model_path=$rootpath/$trainCollection/sea_train/$valCollection/$config/$prefix/model_best.pth.tar
 sim_name=$trainCollection/sea_train/$valCollection/$config/$prefix
