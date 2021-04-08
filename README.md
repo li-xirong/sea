@@ -13,7 +13,7 @@ The code assumes [video-level CNN features](https://github.com/xuchaoxi/video-cn
 * python 3.7
 * PyTorch 1.4.0
 * tensorboard 2.1.0
-* numpy 1.16.4
+* numpy 1.19.5
 
 We used Anaconda to setup a deep learning workspace that supports PyTorch. Run the following script to install the required packages.
 
@@ -41,6 +41,41 @@ FeatureData TextData VideoSets
 ### msvd datast
 
 
+
+## Scripts for training, testing, and evaluation
+
+#### Training and test from sratch
+```bash
+# choose one model config you want to ues
+config=sea_resnext101-resnet152_bow_w2v
+config=sea_resnext101-resnet152_bow_w2v_gru
+config=sea_resnext101-resnet152_bow_w2v_bigru
+config=sea_resnext101-resnet152_bow_w2v_bert
+config=sea_resnext101-resnet152_bow_w2v_gru_bert
+config=sea_resnext101-resnet152_bow_w2v_bigru_bert
+
+# use the first GPU on your device
+gpu_id=0 
+
+# do train and test on msrvtt10k dataset
+bash do_train_and_test_msrvtt10k $config $gpu_id
+
+# do train and test on msvd dataset
+bash do_train_and_test_msvd.sh $config $gpu_id
+
+# do train and test on msvd dataset
+bash do_train_and_test_tgif.sh $config $gpu_id
+
+# for AVS, do train on tgif-msrvtt10k dataset and test on iacc.3 or v3c1.
+bash do_train_tgif-msrvtt10k.sh $config $gpu_id
+bash do_test_iacc.3.sh $config $gpu_id
+bash do_test_v3c1.sh $config $gpu_id
+# for AVS, do evaluation on topics of tv16-20
+cd tv-avs-eval
+do_eval.sh $config
+```
+#### Test and evaluate a pre-trained model
+to do
 
 ## SEA on msrvtt10k
 

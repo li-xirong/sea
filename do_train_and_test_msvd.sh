@@ -1,5 +1,4 @@
-# rootpath=$HOME/VisualSearch
-rootpath=data
+rootpath=$HOME/VisualSearch
 overwrite=0
 trainCollection=msvdtrain
 valCollection=msvdval

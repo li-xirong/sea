@@ -124,7 +124,7 @@ def perf_txt_to_excel(pattern_file_path, perf_file_dir):
     workbook.save(filename=excel_file_path)
 
     from common import logger
-    logger.info('perf.txt has transformed into excel file: %s' % (excel_file_path))
+    logger.info('perf.txt has transformed in excel file: %s' % (excel_file_path))
 
 if __name__ == '__main__':
     pass

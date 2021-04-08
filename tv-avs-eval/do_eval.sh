@@ -1,10 +1,5 @@
-rootpath=data
+rootpath=$HOME/VisualSearch
 overwrite=0
-
-# if [ "$#" -ne 3 ]; then
-#     echo "Usage: $0 testCollection topic_set sim_name"
-#     exit
-# fi
 
 trainCollection=tgif-msrvtt10k
 valCollection=tv2016train
@@ -13,7 +8,7 @@ val_set=setA
 config=$1
 prefix=runs_0
 
-model_path=$rootpath/$trainCollection/w2vvpp_train/$valCollection/$val_set/$config/$prefix/model_best.pth.tar
+# model_path=$rootpath/$trainCollection/sea_train/$valCollection/$val_set/$config/$prefix/model_best.pth.tar
 sim_name=$trainCollection/$valCollection/$val_set/$config/$prefix
 
 for topic_set in {tv16,tv17,tv18}; do
