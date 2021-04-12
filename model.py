@@ -224,7 +224,7 @@ class GruTxtEncoder(TxtEncoder):
         elif self.pooling == 'last':
             I = torch.LongTensor(lengths).view(-1, 1, 1)
             I = I.expand(batch_size, 1, self.rnn_size) - 1
-            I = I.cuda()
+            I = I.to(device)
             out = torch.gather(padded[0], 1, I).squeeze(1)
         elif self.pooling == 'mean_last':
             out1 = torch.zeros(batch_size, self.rnn_size).to(device)
@@ -233,7 +233,7 @@ class GruTxtEncoder(TxtEncoder):
 
             I = torch.LongTensor(lengths).view(-1, 1, 1)
             I = I.expand(batch_size, 1, self.rnn_size) - 1
-            I = I.cuda()
+            I = I.to(device)
             out2 = torch.gather(padded[0], 1, I).squeeze(1)
             out = torch.cat((out1, out2), dim=1)
         return out
