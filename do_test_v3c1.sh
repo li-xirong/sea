@@ -15,7 +15,7 @@ fi
 config=$1
 prefix=runs_0
 
-model_path=$rootpath/$trainCollection/w2vvpp_train/$valCollection/$val_set/$config/$prefix/model_best.pth.tar
+model_path=$rootpath/$trainCollection/sea_train/$valCollection/$val_set/$config/$prefix/model_best.pth.tar
 sim_name=$trainCollection/$valCollection/$val_set/$config/$prefix
 
 if [ ! -f "$model_path" ]; then
@@ -25,5 +25,5 @@ fi
 
 gpu=$2
 CUDA_VISIBLE_DEVICES=$gpu python predictor.py $testCollection $model_path $sim_name \
-    --query_sets tv19.avs.txt \
+    --query_sets $query_sets \
     --rootpath $rootpath  --overwrite $overwrite 

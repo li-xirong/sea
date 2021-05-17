@@ -1,6 +1,5 @@
-
 class config(object):
-    model = 'SEA_bow_w2v'
+    model = 'sea'
     
     text_encoding = 'bow_nsw@w2v_nsw'
     threshold = 5
@@ -44,4 +43,3 @@ class config(object):
     lr_decay_rate = 0.99
     # Gradient clipping threshold
     grad_clip = 2
-

@@ -159,6 +159,7 @@ def eval(label_matrix):
     
     # print("len of ranks:", len(ranks))
     # print((1.0 - 1.0*ranks/len(ranks)))
-    negRank = (1.0 - 1.0*ranks/len(ranks)).mean()
+    # negRank = (1.0 - 1.0*ranks/len(ranks)).mean()
 
-    return (r1, r5, r10, medr, meanr, mir, mAP, negRank)
+    # return (r1, r5, r10, medr, meanr, mir, mAP, negRank)
+    return (r1, r5, r10, medr, meanr, mir, mAP)

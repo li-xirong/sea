@@ -48,7 +48,8 @@ def xml_to_treceval(opt, input_file):
     newlines = []
     for topicResult in root.iter('videoAdhocSearchTopicResult'):
         qry_id = '1' + topicResult.attrib['tNum']
-        itemlist = topicResult.getchildren()
+        # itemlist = topicResult.getchildren()
+        itemlist = list(topicResult)
         for rank, item in enumerate(itemlist):
             assert(rank+1 == int(item.attrib['seqNum']))
             shot_id = item.attrib['shotId']
@@ -76,7 +77,7 @@ def process(opt, input_xml_file):
 
     resp = parse_result(res)
 
-    print '%s infAP: %.3f' % (opt.edition, resp)
+    print(('%s infAP: %.3f') % (opt.edition, resp))
 
 
 

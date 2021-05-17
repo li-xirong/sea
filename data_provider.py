@@ -21,9 +21,9 @@ def collate_text(data):
     captions, idxs, cap_ids = zip(*data)
     return captions, idxs, cap_ids
 
-def collate_text_with_cap_feat(data):
-    captions, idxs, cap_ids, cap_features = zip(*data)
-    return captions, idxs, cap_ids, cap_features
+# def collate_text_with_cap_feat(data):
+#     captions, idxs, cap_ids, cap_features = zip(*data)
+#     return captions, idxs, cap_ids, cap_features
 
 def collate_pair(data):
     data.sort(key=lambda x: len(TextTool.tokenize(x[1])), reverse=True)
@@ -31,11 +31,11 @@ def collate_pair(data):
     vis_feats = torch.stack(vis_feats, 0)
     return vis_feats, captions, idxs, vis_ids, cap_ids
 
-def collate_pair_with_cap_feat(data):
-    data.sort(key=lambda x: len(TextTool.tokenize(x[1])), reverse=True)
-    vis_feats, captions, idxs, vis_ids, cap_ids, cap_features = zip(*data)
-    vis_feats = torch.stack(vis_feats, 0)
-    return vis_feats, captions, idxs, vis_ids, cap_ids, cap_features  
+# def collate_pair_with_cap_feat(data):
+#     data.sort(key=lambda x: len(TextTool.tokenize(x[1])), reverse=True)
+#     vis_feats, captions, idxs, vis_ids, cap_ids, cap_features = zip(*data)
+#     vis_feats = torch.stack(vis_feats, 0)
+#     return vis_feats, captions, idxs, vis_ids, cap_ids, cap_features  
 
 def collate_frame_pair(data):
     data.sort(key=lambda x: len(TextTool.tokenize(x[1])), reverse=True)
@@ -177,28 +177,28 @@ class PairDataset(data.Dataset):
     def __len__(self):
         return self.length
 
-class PairDatasetWithCapFeat(PairDataset):
+# class PairDatasetWithCapFeat(PairDataset):
 
-    def __init__(self, params):
-        super().__init__(params)
-        self.cap_feature_names = params['cap_feature_names']  # 不同的caption特征名 列表
-        self.cap_feature_file_paths = params['cap_feature_file_paths'] # 不同的caption特征文件路径 列表
-        self.cap_feature_files = {}
-        for i, cap_feature_name in enumerate(self.cap_feature_names):
-            self.cap_feature_files[cap_feature_name] = BigFile(self.cap_feature_file_paths[i])
+#     def __init__(self, params):
+#         super().__init__(params)
+#         self.cap_feature_names = params['cap_feature_names']  # 不同的caption特征名 列表
+#         self.cap_feature_file_paths = params['cap_feature_file_paths'] # 不同的caption特征文件路径 列表
+#         self.cap_feature_files = {}
+#         for i, cap_feature_name in enumerate(self.cap_feature_names):
+#             self.cap_feature_files[cap_feature_name] = BigFile(self.cap_feature_file_paths[i])
      
-    def __getitem__(self, index):
-        cap_id = self.cap_ids[index]
-        vis_id = self.get_visId_by_capId(cap_id)
+#     def __getitem__(self, index):
+#         cap_id = self.cap_ids[index]
+#         vis_id = self.get_visId_by_capId(cap_id)
 
-        caption = self.txtData.get_caption_by_id(cap_id)
-        vis_feat = self.visData.get_feat_by_id(vis_id)
+#         caption = self.txtData.get_caption_by_id(cap_id)
+#         vis_feat = self.visData.get_feat_by_id(vis_id)
         
-        cap_features ={}
-        for cap_feature_name in self.cap_feature_files.keys():
-            cap_features[cap_feature_name] = self.cap_feature_files[cap_feature_name].read_one(cap_id)
+#         cap_features ={}
+#         for cap_feature_name in self.cap_feature_files.keys():
+#             cap_features[cap_feature_name] = self.cap_feature_files[cap_feature_name].read_one(cap_id)
 
-        return vis_feat, caption, index, vis_id, cap_id, cap_features
+#         return vis_feat, caption, index, vis_id, cap_id, cap_features
 
 
 
@@ -241,14 +241,14 @@ def txt_provider(params):
                                               collate_fn=collate_text)
     return data_loader
 
-def txt_provider_with_cap_feat(params):
-    data_loader = torch.utils.data.DataLoader(dataset=TextDatasetWithCapFeat(params),
-                                              batch_size=params.get('batch_size', 1),
-                                              shuffle=params.get('shuffle', False),
-                                              pin_memory=params.get('pin_memory', False),
-                                              num_workers=params.get('num_workers', 0),
-                                              collate_fn=collate_text_with_cap_feat)
-    return data_loader
+# def txt_provider_with_cap_feat(params):
+#     data_loader = torch.utils.data.DataLoader(dataset=TextDatasetWithCapFeat(params),
+#                                               batch_size=params.get('batch_size', 1),
+#                                               shuffle=params.get('shuffle', False),
+#                                               pin_memory=params.get('pin_memory', False),
+#                                               num_workers=params.get('num_workers', 0),
+#                                               collate_fn=collate_text_with_cap_feat)
+#     return data_loader
 
 def pair_provider(params):
     data_loader = torch.utils.data.DataLoader(dataset=PairDataset(params),
@@ -259,14 +259,14 @@ def pair_provider(params):
                                               collate_fn=collate_pair)
     return data_loader
 
-def pair_provider_with_cap_feat(params):
-    data_loader = torch.utils.data.DataLoader(dataset=PairDatasetWithCapFeat(params),
-                                              batch_size=params.get('batch_size', 1),
-                                              shuffle=params.get('shuffle', False),
-                                              pin_memory=params.get('pin_memory', False),
-                                              num_workers=params.get('num_workers', 0),
-                                              collate_fn=collate_pair_with_cap_feat)
-    return data_loader
+# def pair_provider_with_cap_feat(params):
+#     data_loader = torch.utils.data.DataLoader(dataset=PairDatasetWithCapFeat(params),
+#                                               batch_size=params.get('batch_size', 1),
+#                                               shuffle=params.get('shuffle', False),
+#                                               pin_memory=params.get('pin_memory', False),
+#                                               num_workers=params.get('num_workers', 0),
+#                                               collate_fn=collate_pair_with_cap_feat)
+#     return data_loader
 
 
 def frame_pair_provider(params):

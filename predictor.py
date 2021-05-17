@@ -43,9 +43,9 @@ def parse_args():
         'test query sets,  tv16.avs.txt,tv17.avs.txt,tv18.avs.txt for TRECVID 16/17/18 and tv19.avs.txt for TRECVID19.'
     )
     parser.add_argument('--batch_size',
-                        default=128,
+                        default=128*8,
                         type=int,
-                        help='size of a predicting mini-batch.')
+                        help='Size of a predicting mini-batch.')
     parser.add_argument('--num_workers',
                         default=2,
                         type=int,
@@ -55,11 +55,11 @@ def parse_args():
                         default=0,
                         choices=[0, 1],
                         help='whether do l2norm before concat features')
-    parser.add_argument(
-        '--config_name',
-        type=str,
-        default='mean_pyresnext-101_rbps13k',
-        help='model configuration file. (default: mean_pyresnext-101_rbps13k')
+    # parser.add_argument(
+    #     '--config_name',
+    #     type=str,
+    #     default='mean_pyresnext-101_rbps13k',
+    #     help='model configuration file. (default: mean_pyresnext-101_rbps13k')
     parser.add_argument(
         '--save_ranking_result',
         type=bool,
@@ -90,22 +90,20 @@ def main():
     config = checkpoint['config']
 
     if hasattr(config, 't2v_w2v'):
-        # if hasattr(config, 'w2v_data_path'):
-        #     w2v_data_path = config.w2v_data_path
-        # else:
-            # w2v_data_path = os.path.join(rootpath, 'word2vec', 'flickr', 'vec500flickr30m')
-            # w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
         w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
         w2v_feature_file = os.path.join(w2v_data_path, 'feature.bin')
         config.t2v_w2v.w2v.binary_file = w2v_feature_file
     
-    cap_feat_names = []
     for encoding in config.text_encoding.split('@'):
-        if 'precomputed_bert' in encoding:
-            cap_feat_names.append(config.bert_feat_name)
+        if 'bert_precomputed' in encoding:
+            if testCollection not in ['iacc.3', 'v3c1']:
+                config.bert_cap_feat_files = [BigFile(os.path.join(rootpath, testCollection, \
+                    'TextData', 'PrecomputedSentFeat', config.bert_feat_name))]
+            else:
+                config.bert_cap_feat_files = [BigFile(os.path.join(rootpath, testCollection, \
+                'TextData', 'PrecomputedSentFeat', "%s.%s"%(q, config.bert_feat_name))) \
+                    for q in opt.query_sets.split(',')]
 
-    # if hasattr(config, 'precomputed_feat_bert'):
-    #     config.precomputed_feat_bert.binary_file = get_txt2vec('precomputed_bert')(trainCollection, config.bert_feat_name, rootpath)
 
     # Construct the model
     if not hasattr(config, 'bidirectional'):
@@ -113,12 +111,14 @@ def main():
     if not hasattr(config, 'rnn_dropout'):
         config.rnn_dropout = 0
     config.pre_norm = opt.pre_norm
+
     if hasattr(config, 'model'):
         model = get_model(config.model)(config)
     else:
-        model = get_model('sea_bow_w2v')(config)
+        model = get_model('sea')(config)
     print(model.vis_net)
     print(model.txt_net)
+    # calculate the number of parameters
     vis_net_params = sum(p.numel() for p in model.vis_net.parameters())
     txt_net_params = sum(p.numel() for p in model.txt_net.parameters())
     print('    VisNet params: %.2fM' % (vis_net_params / 1000000.0))
@@ -126,11 +126,9 @@ def main():
     print('    Total params: %.2fM' %
           ((vis_net_params + txt_net_params) / 1000000.0))
 
-
     model.load_state_dict(checkpoint['model'])
     print("=> loaded checkpoint '{}' (epoch {}, best_perf {})".format(
         resume_file, epoch, best_perf))
-
 
     vis_feat_file = BigFile(
         os.path.join(rootpath, testCollection, 'FeatureData', config.vid_feat))
@@ -142,28 +140,18 @@ def main():
                 os.path.join(rootpath, testCollection, 'VideoSets',
                              testCollection + '.txt'))))
 
-    if hasattr(config,
-               'model') and config.model in ['multispace_visnetvlad_bow_w2v']:
-        vis_loader = data.frame_provider({
-            'vis_feat': vis_feat_file,
-            'vis_ids': vis_ids,
-            'pin_memory': True,
-            'batch_size': opt.batch_size,
-            'num_workers': opt.num_workers
-        })
-    else:
-        vis_loader = data.vis_provider({
-            'vis_feat': vis_feat_file,
-            'vis_ids': vis_ids,
-            'pin_memory': True,
-            'batch_size': opt.batch_size,
-            'num_workers': opt.num_workers
-        })
+    vis_loader = data.vis_provider({
+        'vis_feat': vis_feat_file,
+        'vis_ids': vis_ids,
+        'pin_memory': True,
+        'batch_size': opt.batch_size,
+        'num_workers': opt.num_workers
+    })
 
     vis_embs = None
 
     for query_set in opt.query_sets.split(','):
-        output_dir = os.path.join(rootpath, testCollection, 'SimilarityIndex',
+        output_dir = os.path.join(rootpath, testCollection, 'SEA_predict_results',
                                   query_set, opt.sim_name)
         pred_result_file = os.path.join(output_dir, 'id.sent.score.txt')
 
@@ -172,27 +160,15 @@ def main():
         util.makedirs(output_dir)
 
         capfile = os.path.join(rootpath, testCollection, 'TextData', query_set)
-        if testCollection in ['v3c1', 'iacc.3']:
-            cap_feat_file_paths = [os.path.join(rootpath, testCollection, 'TextData', 'PrecomputedSentFeat', '%s.%s'%(query_set, cap_feat_name)) for cap_feat_name in cap_feat_names]
-        else:
-            cap_feat_file_paths = [os.path.join(rootpath, testCollection, 'TextData', 'PrecomputedSentFeat', cap_feat_name) for cap_feat_name in cap_feat_names]
-        
+ 
         # load text data
-        # txt_loader = data.txt_provider({
-        #     'capfile': capfile,
-        #     'pin_memory': True,
-        #     'batch_size': opt.batch_size,
-        #     'num_workers': opt.num_workers
-        # })
-        
-        txt_loader = data.txt_provider_with_cap_feat({
+        txt_loader = data.txt_provider({
             'capfile': capfile,
-            'cap_feature_names': cap_feat_names, 
-            'cap_feature_file_paths':cap_feat_file_paths,
             'pin_memory': True,
             'batch_size': opt.batch_size,
             'num_workers': opt.num_workers
         })
+
 
         opt.save_embs = False
         if opt.save_embs:
@@ -230,8 +206,7 @@ def main():
                     np.array(vis_ids)[ind] == txt_ids[index].split('#')[0])
                                     [0]] = 1
 
-            (r1, r5, r10, medr, meanr, mir, mAP,
-             negRank) = evaluation.eval(label_matrix)
+            (r1, r5, r10, medr, meanr, mir, mAP) = evaluation.eval(label_matrix)
             sum_recall = r1 + r5 + r10
             tempStr = " * Text to video:\n"
             tempStr += " * r_1_5_10: {}\n".format(
@@ -254,8 +229,7 @@ def main():
                 label_matrix[index][np.where(
                     np.array(txt_ids)[ind] == vis_ids[index])[0]] = 1
 
-            (r1, r5, r10, medr, meanr, mir, mAP,
-             negRank) = evaluation.eval(label_matrix)
+            (r1, r5, r10, medr, meanr, mir, mAP) = evaluation.eval(label_matrix)
             sum_recall = r1 + r5 + r10
             tempStr += "\n * Video to text:\n"
             tempStr += " * r_1_5_10: {}\n".format(

@@ -4,7 +4,7 @@ trainCollection=msrvtt10ktrain
 valCollection=msrvtt10kval
 testCollection=msrvtt10ktest
 
-if [ "$#" -ne 2];then
+if [ "$#" -ne 2 ];then
     echo "Usage: $0 config gpuID"
     exit
 fi

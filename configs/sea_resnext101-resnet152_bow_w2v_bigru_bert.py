@@ -1,8 +1,7 @@
-
 class config(object):
-    model = 'SEA_bow_w2v_bigru_bert'
+    model = 'sea'
     
-    text_encoding = 'bow_nsw@w2v_nsw@bigru_mean@precomputed_bert'
+    text_encoding = 'bow_nsw@w2v_nsw@bigru_mean@bert_precomputed'
 
     threshold = 5
     bow_norm = 0

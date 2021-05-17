@@ -24,7 +24,7 @@ ETIME = 25 # the time in seconds from the time the system is presented with the 
 
 
 def read_topics(topics_file):
-    lines = map(str.strip, open(topics_file).readlines())
+    lines = list(map(str.strip, open(topics_file).readlines()))
     qry_list = []
     for line in lines:
         tnum, query = line.split(' ', 1)
@@ -69,7 +69,7 @@ def process(options, collection, input_txt_file):
     shot_set = set(map(str.strip, open(shots_file).readlines()))
     logger.info('%s -> %d testing topics, %d shots', edition, len(tnum_set), len(shot_set))
 
-    data = map(str.strip, open(input_txt_file).readlines())
+    data = list(map(str.strip, open(input_txt_file).readlines()))
     assert(len(data) == len(tnum_set)), "number of topics does not match"
 
     xml_content = []

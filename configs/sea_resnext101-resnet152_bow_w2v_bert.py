@@ -1,9 +1,8 @@
-
 class config(object):
-    model = 'SEA_bow_w2v_bert'
+    model = 'sea'
     
-    text_encoding = 'bow_nsw@precomputed_bert@w2v_nsw'
-    
+    text_encoding = 'bow_nsw@w2v_nsw@bert_precomputed'
+
     threshold = 5
     bow_norm = 0
     we_dim = 500
@@ -16,7 +15,7 @@ class config(object):
     bert_service_ip = '10.77.50.197'
     bert_port = 1234
     bert_port_out = 4321
-    
+
     txt_fc_layers = '0-2048'
     txt_norm = 2 # L_2 norm
     use_abs = False

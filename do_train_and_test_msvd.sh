@@ -4,7 +4,7 @@ trainCollection=msvdtrain
 valCollection=msvdval
 testCollection=msvdtest
 
-if [ "$#" -ne 2];then
+if [ "$#" -ne 2 ];then
     echo "Usage: $0 config gpuID"
     exit
 fi

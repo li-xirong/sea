@@ -120,6 +120,7 @@ class TransformNet(nn.Module):
 
         super().load_state_dict(new_state)
 
+# Visual models
 
 class VisTransformNet(TransformNet):
     def __init__(self, opt):
@@ -156,6 +157,7 @@ class NetVLADVisNet(VisNet):
     def _init_encoder(self, opt):
         self.encoder = NetVLAD_AvgPooling(opt)
 
+# Text models
 
 class TxtTransformNet(TransformNet):
     def __init__(self, opt):
@@ -166,7 +168,9 @@ class TxtEncoder(nn.Module):
     def __init__(self, opt):
         super().__init__()
 
-    def forward(self, captions, cap_features):
+    def forward(self, txt_input):
+        captions, cap_ids = txt_input
+        
         return captions
 
 
@@ -191,9 +195,11 @@ class GruTxtEncoder(TxtEncoder):
         self._init_rnn(opt)
         self.rnn_size = opt.rnn_size
 
-    def forward(self, captions, cap_features):
+    def forward(self, txt_input):
+        captions, cap_ids = txt_input
         """Handles variable size captions
         """
+        
         batch_size = len(captions)
 
         # caption encoding
@@ -272,7 +278,10 @@ class BoWTxtEncoder(TxtEncoder):
         else:
             self.bow_encoder_l2norm = False
 
-    def forward(self, captions, cap_features):
+    def forward(self, txt_input):
+        captions, cap_ids = txt_input
+        
+
         bow_out = torch.Tensor([
             self.t2v_bow.encoding(caption) for caption in captions
         ]).to(device)
@@ -303,7 +312,10 @@ class W2VTxtEncoder(TxtEncoder):
 
         assert (self.is_online or self.is_precomputed)
 
-    def forward(self, captions, cap_features):
+    def forward(self, txt_input):
+        captions, cap_ids = txt_input
+        
+
         if self.is_precomputed:
             pass
             # cap_ids = list(cap_ids)
@@ -321,7 +333,9 @@ class W2V_NetVLADTxtEncoder(TxtEncoder):
         self.t2v_w2v = opt.t2v_w2v
         self.netvlad = NetVLAD(opt)
 
-    def forward(self, captions, cap_features):
+    def forward(self, txt_input):
+        captions, cap_ids = txt_input
+        
         w2v_out = [
             torch.Tensor(self.t2v_w2v.raw_encoding(caption))
             for caption in captions
@@ -336,7 +350,10 @@ class InfersentTxtEncoder(TxtEncoder):
         super().__init__(opt)
         self.t2v_infer = opt.t2v_infer
 
-    def forward(self, captions, cap_features):
+    def forward(self, txt_input):
+        captions, cap_ids = txt_input
+        
+
         infersent_out = torch.Tensor([
             self.t2v_infer.encoding(caption) for caption in captions
         ]).to(device)
@@ -346,11 +363,13 @@ class InfersentTxtEncoder(TxtEncoder):
 class BertTxtEncoder(TxtEncoder):
     def __init__(self, opt):
         super().__init__(opt)
-
-        self.is_online, self.is_precomputed = False, False
+        self.has_precomputed, self.is_online = False, False
 
         for encoding in opt.text_encoding.split('@'):
-            if 'online_bert' in encoding:
+            if 'bert_online' in encoding:
+                '''
+                refer to 'bert-as-service' library
+                '''
                 from bert_serving.client import BertClient
                 self.bc = BertClient(ip=opt.bert_service_ip,
                                      port=opt.bert_port,
@@ -359,18 +378,29 @@ class BertTxtEncoder(TxtEncoder):
                 self.is_online = True
                 logger.info('Online BertClient initializing')
 
-            if 'precomputed_bert' in encoding:
-                self.bert_feature_name = opt.bert_feat_name
-                self.is_precomputed = True
-                logger.info('Offline bert initializing')
-        assert (self.is_online or self.is_precomputed)
+            if 'bert_precomputed' in encoding:
+                # self.bert_feature_name = opt.bert_feat_name
+                
+                self.bert_cap_feat_files = opt.bert_cap_feat_files
+                self.has_precomputed = True
+                logger.info('Use precomputed bert feature')
+        assert (self.is_online or self.has_precomputed) 
 
-    def forward(self, captions, cap_features):
-        if self.is_precomputed:
-            bert_out = torch.Tensor([
-                cap_feature[self.bert_feature_name]
-                for cap_feature in cap_features
-            ]).to(device)
+    def forward(self, txt_input):
+        captions, cap_ids = txt_input
+        
+        # Choose the bert feature file
+        for f in self.bert_cap_feat_files:
+            if cap_ids[0] in f.names:
+                bert_feat_file = f
+                break
+
+        if self.has_precomputed:
+            '''
+            We tend to use the precompute feature
+            '''
+            bert_feature = [bert_feat_file.read_one(cap_id) for cap_id in cap_ids]
+            bert_out = torch.Tensor(bert_feature).to(device)
         else:
             bert_out = torch.Tensor(self.bc.encode(captions)).to(device)
         return bert_out
@@ -388,8 +418,8 @@ class TxtNet(nn.Module):
         self._init_encoder(opt)
         self._init_transformer(opt)
 
-    def forward(self, captions, cap_features):
-        features = self.encoder(captions, cap_features)
+    def forward(self, txt_input:tuple):
+        features = self.encoder(txt_input)
         features = self.transformer(features)
         return features
 
@@ -418,10 +448,10 @@ class W2V_NetVLADTxtNet(TxtNet):
         self.encoder = W2V_NetVLADTxtEncoder(opt)
 
 
-class InfersentTxtNet(TxtNet):
-    def _init_encoder(self, opt):
-        opt.txt_fc_layers[0] = opt.t2v_infer.ndims
-        self.encoder = InfersentTxtEncoder(opt)
+# class InfersentTxtNet(TxtNet):
+#     def _init_encoder(self, opt):
+#         opt.txt_fc_layers[0] = opt.t2v_infer.ndims
+#         self.encoder = InfersentTxtEncoder(opt)
 
 
 class GruTxtNet(TxtNet):
@@ -455,259 +485,67 @@ class BertTxtNet(TxtNet):
         self.encoder = BertTxtEncoder(opt)
 
 
+NAME_TO_TXT_NETS = {
+    'bow': BoWTxtNet,
+    'softbow': SoftBoWTxtNet,
+    'w2v': W2VTxtNet,
+    'gru': GruTxtNet,
+    'bigru': GruTxtNet,
+    'bert': BertTxtNet,
+    'lstm': LstmTxtNet,
+    'netvlad': W2V_NetVLADTxtNet
+}
+
+
 class MultiSpaceTxtNet(nn.Module):
     def __init__(self, opt):
+        """
+        opt includes a list of text nets: opt.txt_net_list
+        """
         super().__init__()
-        raise NotImplementedError
+        # opt.txt_net_list
+        self.txt_nets = []
+        for name in opt.txt_net_list:
+            txt_net = NAME_TO_TXT_NETS[name](opt)
+            self.txt_nets.append(txt_net)
+        self.txt_nets = nn.ModuleList(self.txt_nets)
 
-    def forward(self, captions, cap_features):
-        raise NotImplementedError
-
-
-class MultiSpaceTxtNet_bow_w2v_gru(nn.Module):
-    def __init__(self, opt):
-        super().__init__()
-        self.txt_net_b = BoWTxtNet(opt)
-        self.txt_net_w = W2VTxtNet(opt)
-        self.txt_net_g = GruTxtNet(opt)
-
-    def forward(self, captions, cap_features):
-        feature_b = self.txt_net_b(captions, cap_features)
-        feature_w = self.txt_net_w(captions, cap_features)
-        feature_g = self.txt_net_g(captions, cap_features)
-
-        return feature_b, feature_w, feature_g
-
-
-class MultiSpaceTxtNet_bow_w2v_gru_bert(MultiSpaceTxtNet_bow_w2v_gru):
-    def __init__(self, opt):
-        super().__init__(opt)
-        self.txt_net_bt = BertTxtNet(opt)
-
-    def forward(self, captions, cap_features):
-        feature_b = self.txt_net_b(captions, cap_features)
-        feature_w = self.txt_net_w(captions, cap_features)
-        feature_g = self.txt_net_g(captions, cap_features)
-        feature_bt = self.txt_net_bt(captions, cap_features)
-
-        return feature_b, feature_w, feature_g, feature_bt
-
-
-class MultiSpaceTxtNet_bow_w2v_lstm(MultiSpaceTxtNet_bow_w2v_gru):
-    def __init__(self, opt):
-        self.txt_net_b = BoWTxtNet(opt)
-        self.txt_net_w = W2VTxtNet(opt)
-        self.txt_net_g = LstmTxtNet(opt)
-
-
-class MultiSpaceTxtNet_bow_w2v_infersent(nn.Module):
-    def __init__(self, opt):
-        super().__init__()
-        self.txt_net_b = BoWTxtNet(opt)
-        self.txt_net_w = W2VTxtNet(opt)
-        self.txt_net_i = InfersentTxtNet(opt)
-
-    def forward(self, captions, cap_features):
-        feature_b = self.txt_net_b(captions, cap_features)
-        feature_w = self.txt_net_w(captions, cap_features)
-        feature_i = self.txt_net_i(captions, cap_features)
-
-        return feature_b, feature_w, feature_i
-
-
-class MultiSpaceTxtNet_bow_w2v_bigru(nn.Module):
-    def __init__(self, opt):
-        super().__init__()
-        self.txt_net_b = BoWTxtNet(opt)
-        self.txt_net_w = W2VTxtNet(opt)
-        self.txt_net_g = BiGruTxtNet(opt)
-
-    def forward(self, captions, cap_features):
-        feature_b = self.txt_net_b(captions, cap_features)
-        feature_w = self.txt_net_w(captions, cap_features)
-        feature_g = self.txt_net_g(captions, cap_features)
-
-        return feature_b, feature_w, feature_g
-
-
-class MultiSpaceTxtNet_bow_w2v_bigru_bert(MultiSpaceTxtNet_bow_w2v_bigru):
-    def __init__(self, opt):
-        super().__init__(opt)
-        self.txt_net_bt = BertTxtNet(opt)
-
-    def forward(self, captions, cap_features):
-        feature_b = self.txt_net_b(captions, cap_features)
-        feature_w = self.txt_net_w(captions, cap_features)
-        feature_g = self.txt_net_g(captions, cap_features)
-        feature_bt = self.txt_net_bt(captions, cap_features)
-
-        return feature_b, feature_w, feature_g, feature_bt
-
-
-class MultiSpaceTxtNet_bow_netvlad_bigru(nn.Module):
-    def __init__(self, opt):
-        super().__init__()
-        self.txt_net_b = BoWTxtNet(opt)
-        self.txt_net_n = W2V_NetVLADTxtNet(opt)
-        self.txt_net_g = BiGruTxtNet(opt)
-
-    def forward(self, captions, cap_features):
-        feature_b = self.txt_net_b(captions, cap_features)
-        feature_n = self.txt_net_n(captions, cap_features)
-        feature_g = self.txt_net_g(captions, cap_features)
-
-        return feature_b, feature_n, feature_g
-
-
-class MultiSpaceTxtNet_bow_w2v(nn.Module):
-    def __init__(self, opt):
-        super().__init__()
-        self.txt_net_b = BoWTxtNet(opt)
-        self.txt_net_w = W2VTxtNet(opt)
-
-    def forward(self, captions, cap_features):
-        feature_b = self.txt_net_b(captions, cap_features)
-        feature_w = self.txt_net_w(captions, cap_features)
-
-        return feature_b, feature_w
-
-
-class MultiSpaceTxtNet_bow_w2v_bert(MultiSpaceTxtNet_bow_w2v):
-    def __init__(self, opt):
-        super().__init__(opt)
-        self.txt_net_bt = BertTxtNet(opt)
-
-    def forward(self, captions, cap_features):
-        feature_b = self.txt_net_b(captions, cap_features)
-        feature_w = self.txt_net_w(captions, cap_features)
-        feature_bt = self.txt_net_bt(captions, cap_features)
-
-        return feature_b, feature_w, feature_bt
-
-
-class MultiSpaceTxtNet_bow_netvlad(nn.Module):
-    def __init__(self, opt):
-        super().__init__()
-
-        self.txt_net_b = BoWTxtNet(opt)
-        self.txt_net_w = W2V_NetVLADTxtNet(opt)
-
-    def forward(self, captions, cap_features):
-        feature_b = self.txt_net_b(captions, cap_features)
-        feature_w = self.txt_net_w(captions, cap_features)
-
-        return feature_b, feature_w
-
-
-class MultiSpaceTxtNet_bow_gru(nn.Module):
-    def __init__(self, opt):
-        super().__init__()
-        self.txt_net_b = BoWTxtNet(opt)
-        self.txt_net_g = GruTxtNet(opt)
-
-    def forward(self, captions, cap_features):
-        feature_b = self.txt_net_b(captions, cap_features)
-        feature_g = self.txt_net_g(captions, cap_features)
-
-        return feature_b, feature_g
-
-
-class MultiSpaceTxtNet_w2v_gru(nn.Module):
-    def __init__(self, opt):
-        super().__init__()
-        self.txt_net_w = W2VTxtNet(opt)
-        self.txt_net_g = GruTxtNet(opt)
-
-    def forward(self, captions, cap_features):
-        feature_w = self.txt_net_w(captions, cap_features)
-        feature_g = self.txt_net_g(captions, cap_features)
-
-        return feature_w, feature_g
+    def forward(self, txt_input):
+        
+        features = []
+        for txt_net in self.txt_nets:
+            feature = txt_net(txt_input)
+            features.append(feature)
+        
+        return tuple(features)
 
 
 class MultiSpaceVisNet(nn.Module):
     def __init__(self, opt):
         super().__init__()
-        self.vis_net_b = VisTransformNet(opt)
-        self.vis_net_w = VisTransformNet(opt)
-        self.vis_net_g = VisTransformNet(opt)
-        self.vis_net_m = VisTransformNet(opt)
+        self.num_of_space = len(opt.txt_net_list)
+        self.vis_nets = []
+        for _ in range(self.num_of_space):
+            vis_net = VisTransformNet(opt)
+            self.vis_nets.append(vis_net)
+        self.vis_nets = nn.ModuleList(self.vis_nets)
 
     def forward(self, vis_input):
-        feature_m = self.vis_net_m(vis_input)
-        feature_b = self.vis_net_b(vis_input)
-        feature_w = self.vis_net_w(vis_input)
-        feature_g = self.vis_net_g(vis_input)
+        features = []
 
-        return feature_m, feature_b, feature_w, feature_g
+        for vis_net in self.vis_nets:
+            feature = vis_net(vis_input)
+            features.append(feature)
+        
+        return tuple(features)
+        
 
-
-class MultiSpaceVisNet_2(nn.Module):
-    def __init__(self, opt):
-        super().__init__()
-        self.vis_net_1 = VisTransformNet(opt)
-        self.vis_net_2 = VisTransformNet(opt)
-
-    def forward(self, vis_input):
-        feature_1 = self.vis_net_1(vis_input)
-        feature_2 = self.vis_net_2(vis_input)
-
-        return feature_1, feature_2
-
-
-class MultiSpaceVisNet_NetVLAD_2(nn.Module):
-    def __init__(self, opt):
-        super().__init__()
-        self.encoder = NetVLAD(opt)
-        self.vis_net_1 = VisTransformNet(opt)
-        self.vis_net_2 = VisTransformNet(opt)
-
-    def forward(self, vis_input):
-        encoder_output = self.encoder(vis_input)
-        feature_1 = self.vis_net_1(encoder_output)
-        feature_2 = self.vis_net_2(encoder_output)
-
-        return feature_1, feature_2
-
-
-class MultiSpaceVisNet_3(nn.Module):
-    def __init__(self, opt):
-        super().__init__()
-        self.vis_net_1 = VisTransformNet(opt)
-        self.vis_net_2 = VisTransformNet(opt)
-        self.vis_net_3 = VisTransformNet(opt)
-
-    def forward(self, vis_input):
-        feature_1 = self.vis_net_1(vis_input)
-        feature_2 = self.vis_net_2(vis_input)
-        feature_3 = self.vis_net_3(vis_input)
-
-        return feature_1, feature_2, feature_3
-
-
-class MultiSpaceVisNet_4(nn.Module):
-    def __init__(self, opt):
-        super().__init__()
-        self.vis_net_1 = VisTransformNet(opt)
-        self.vis_net_2 = VisTransformNet(opt)
-        self.vis_net_3 = VisTransformNet(opt)
-        self.vis_net_4 = VisTransformNet(opt)
-
-    def forward(self, vis_input):
-        feature_1 = self.vis_net_1(vis_input)
-        feature_2 = self.vis_net_2(vis_input)
-        feature_3 = self.vis_net_3(vis_input)
-        feature_4 = self.vis_net_3(vis_input)
-
-        return feature_1, feature_2, feature_3, feature_4
-
-
-class CrossModalNetwork(object):
+class SEA():
     def _init_vis_net(self, opt):
-        self.vis_net = VisNet(opt)
+        self.vis_net = MultiSpaceVisNet(opt)
 
     def _init_txt_net(self, opt):
-        self.txt_net = TxtNet(opt)
+        self.txt_net = MultiSpaceTxtNet(opt)
 
     def _init_optim(self, opt):
         self.grad_clip = opt.grad_clip
@@ -785,24 +623,34 @@ class CrossModalNetwork(object):
         self.lr_schedulers[0].step()
         self.lr_schedulers[1].step(val_value)
 
-    def compute_similarity(self, txt_embs, vis_embs):
-        return cosine_sim(txt_embs, vis_embs)
-        #return -1 * euclidean_dist(txt_embs, vis_embs)
+    def compute_similarity(self, txt_embs:tuple, vis_embs:tuple):
+        assert len(txt_embs) == len(vis_embs)
 
+        scores = cosine_sim(txt_embs[0], vis_embs[0])
+        for i in range(1, len(txt_embs)):
+            scores += cosine_sim(txt_embs[i], vis_embs[i])
+        
+        return scores * 1.0
+        
     def compute_loss(self, txt_embs, vis_embs):
         """Compute the loss given pairs of image and caption embeddings
         """
-        loss = self.criterion(txt_embs, vis_embs)
-        #loss, indices_im = self.criterion(txt_embs, vis_embs)
-        return loss, None
+        loss = self.criterion(txt_embs[0], vis_embs[0])
+        indices_im = None
+        for i in range(1, len(vis_embs)):
+            cur_loss = self.criterion(txt_embs[i], vis_embs[i])
+            loss += cur_loss
+        return loss, indices_im
 
-    def train(self, captions, cap_ids, cap_features, vis_feats, vis_ids):
+    def train(self, captions, cap_ids, vis_feats, vis_ids):
         """One training step given vis_feats and captions.
         """
         self.iters += 1
 
         # compute the embeddings
-        txt_embs = self.txt_net(captions, cap_features)
+        txt_input = tuple([captions, cap_ids])
+
+        txt_embs = self.txt_net(txt_input)
         vis_embs = self.vis_net(vis_feats)
 
         # measure accuracy and record loss
@@ -822,114 +670,14 @@ class CrossModalNetwork(object):
     def validate_similarity(self, data_loader):
         self.switch_to_eval()
 
-        vis_embs = None
-        txt_embs = None
-
-        pbar = Progbar(len(data_loader.dataset))
-
-        for i, (vis_input, captions, idxs, batch_vis_ids,
-                cap_ids) in enumerate(data_loader):
-            with torch.no_grad():
-                txt_emb = self.txt_net(captions)
-                vis_emb = self.vis_net(vis_input)
-
-            if vis_embs is None:
-                txt_embs = torch.zeros(len(data_loader.dataset),
-                                       txt_emb.size(1))
-                vis_embs = torch.zeros(len(data_loader.dataset),
-                                       vis_emb.size(1))
-
-            txt_embs[idxs] = txt_emb.cpu().clone()
-            vis_embs[idxs] = vis_emb.cpu().clone()
-
-            pbar.add(len(idxs))
-
-        return self.compute_similarity(txt_embs, vis_embs).numpy()
-
-    @util.timer
-    def predict(self, txt_loader, vis_loader):
-        self.switch_to_eval()
-
-        txt_ids = []
-        vis_ids = []
-        pbar = Progbar(len(txt_loader.dataset))
-
-        for i, (captions, idxs, cap_ids,
-                cap_features) in enumerate(txt_loader):
-            with torch.no_grad():
-                txt_emb = self.txt_net(captions, cap_features)
-
-            for j, (vis_input, idxs, batch_vis_ids) in enumerate(vis_loader):
-
-                with torch.no_grad():
-                    vis_emb = self.vis_net(vis_input)
-                score = self.compute_similarity(txt_emb, vis_emb)
-                if i == 0:
-                    vis_ids.extend(batch_vis_ids)
-                batch_score = score.cpu() if j == 0 else torch.cat(
-                    (batch_score, score.cpu()), dim=1)
-
-            pbar.add(len(cap_ids))
-            txt_ids.extend(cap_ids)
-            scores = batch_score if i == 0 else torch.cat(
-                (scores, batch_score), dim=0)
-        return scores.numpy(), txt_ids, vis_ids
-
-    def embed_vis(self, vis_input):
-        self.switch_to_eval()
-        vis_input = np.array(vis_input)
-        if vis_input.ndim == 1:
-            vis_input = [vis_input]
-
-        with torch.no_grad():
-            vis_input = torch.Tensor(vis_input).to(device)
-            vis_embs = self.vis_net(vis_input)
-
-        return vis_embs.cpu()
-
-    def embed_txt(self, captions):
-        self.switch_to_eval()
-        if isinstance(captions, str):
-            captions = [captions]
-
-        with torch.no_grad():
-            txt_embs = self.txt_net(captions)
-
-        return txt_embs.cpu()
-
-
-class SEA(CrossModalNetwork):
-    def _init_vis_net(self, opt):
-        self.vis_net = MultiSpaceVisNet(opt)
-
-    def _init_txt_net(self, opt):
-        self.txt_net = MultiSpaceTxtNet(opt)
-
-    def compute_similarity(self, txt_embs, vis_embs):
-        scores = cosine_sim(txt_embs[0], vis_embs[0])
-        for i in range(1, len(txt_embs)):
-            scores += cosine_sim(txt_embs[i], vis_embs[i])
-        return scores * 1.0
-
-    def compute_loss(self, txt_embs, vis_embs):
-
-        loss = self.criterion(txt_embs[0], vis_embs[0])
-        indices_im = None
-        for i in range(1, len(vis_embs)):
-            cur_loss = self.criterion(txt_embs[i], vis_embs[i])
-            loss += cur_loss
-        return loss, indices_im
-
-    def validate_similarity(self, data_loader):
-        self.switch_to_eval()
-
         vis_embs, txt_embs = None, None
 
         pbar = Progbar(len(data_loader.dataset))
         for _, (vis_input, captions, idxs, batch_vis_ids,
                 cap_ids) in enumerate(data_loader):
             with torch.no_grad():
-                txt_emb = self.txt_net(captions)
+                txt_input = tuple([captions, cap_ids])
+                txt_emb = self.txt_net(txt_input)
                 vis_emb = self.vis_net(vis_input)
 
             if vis_embs is None:
@@ -952,83 +700,60 @@ class SEA(CrossModalNetwork):
 
         return self.compute_similarity(txt_embs, vis_embs)
 
+    @util.timer
+    def predict(self, txt_loader, vis_loader):
+        self.switch_to_eval()
 
-class SEA_bow_w2v_gru(SEA):
-    def _init_vis_net(self, opt):
-        self.vis_net = MultiSpaceVisNet_3(opt)
+        txt_ids = []
+        vis_ids = []
+        pbar = Progbar(len(txt_loader.dataset))
 
-    def _init_txt_net(self, opt):
-        self.txt_net = MultiSpaceTxtNet_bow_w2v_gru(opt)
+        for i, (captions, _, cap_ids) in enumerate(txt_loader):
+            with torch.no_grad():
+                txt_input = tuple([captions, cap_ids])
+                txt_emb = self.txt_net(txt_input)
 
+            for j, (vis_input, idxs, batch_vis_ids) in enumerate(vis_loader):
 
-class SEA_bow_w2v_bigru(SEA_bow_w2v_gru):
-    def _init_txt_net(self, opt):
-        self.txt_net = MultiSpaceTxtNet_bow_w2v_bigru(opt)
+                with torch.no_grad():
+                    vis_emb = self.vis_net(vis_input)
+                score = self.compute_similarity(txt_emb, vis_emb)
+                if i == 0:
+                    vis_ids.extend(batch_vis_ids)
+                batch_score = score.cpu() if j == 0 else torch.cat(
+                    (batch_score, score.cpu()), dim=1)
 
+            pbar.add(len(cap_ids))
+            txt_ids.extend(cap_ids)
+            scores = batch_score if i == 0 else torch.cat(
+                (scores, batch_score), dim=0)
+        return scores.numpy(), txt_ids, vis_ids
 
-class SEA_bow_w2v_bert(SEA):
-    def _init_vis_net(self, opt):
-        self.vis_net = MultiSpaceVisNet_3(opt)
+    # def embed_vis(self, vis_input):
+    #     self.switch_to_eval()
+    #     vis_input = np.array(vis_input)
+    #     if vis_input.ndim == 1:
+    #         vis_input = [vis_input]
 
-    def _init_txt_net(self, opt):
-        self.txt_net = MultiSpaceTxtNet_bow_w2v_bert(opt)
+    #     with torch.no_grad():
+    #         vis_input = torch.Tensor(vis_input).to(device)
+    #         vis_embs = self.vis_net(vis_input)
 
+    #     return  [vis_emb.cpu() for vis_emb in vis_embs]
 
-class SEA_bow_w2v_gru_bert(SEA):
-    def _init_vis_net(self, opt):
-        self.vis_net = MultiSpaceVisNet_4(opt)
+    # def embed_txt(self, captions):
+    #     self.switch_to_eval()
+    #     if isinstance(captions, str):
+    #         captions = [captions]
 
-    def _init_txt_net(self, opt):
-        self.txt_net = MultiSpaceTxtNet_bow_w2v_gru_bert(opt)
+    #     with torch.no_grad():
+    #         txt_embs = self.txt_net(captions)
 
-
-class SEA_bow_w2v_bigru_bert(SEA):
-    def _init_vis_net(self, opt):
-        self.vis_net = MultiSpaceVisNet_4(opt)
-
-    def _init_txt_net(self, opt):
-        self.txt_net = MultiSpaceTxtNet_bow_w2v_bigru_bert(opt)
-
-
-class SEA_bow_w2v(SEA):
-    def _init_vis_net(self, opt):
-        self.vis_net = MultiSpaceVisNet_2(opt)
-
-    def _init_txt_net(self, opt):
-        self.txt_net = MultiSpaceTxtNet_bow_w2v(opt)
-
-
-class SEA_bow_netvlad(SEA):
-    def _init_vis_net(self, opt):
-        self.vis_net = MultiSpaceVisNet_2(opt)
-
-    def _init_txt_net(self, opt):
-        self.txt_net = MultiSpaceTxtNet_bow_netvlad(opt)
-
-
-class SEA_bow_gru(SEA):
-    def _init_vis_net(self, opt):
-        self.vis_net = MultiSpaceVisNet_2(opt)
-
-    def _init_txt_net(self, opt):
-        self.txt_net = MultiSpaceTxtNet_bow_gru(opt)
-
-
-class SEA_w2v_gru(SEA):
-    def _init_vis_net(self, opt):
-        self.vis_net = MultiSpaceVisNet_2(opt)
-
-    def _init_txt_net(self, opt):
-        self.txt_net = MultiSpaceTxtNet_w2v_gru(opt)
+    #     return [txt_emb.cpu() for txt_emb in txt_embs]
 
 
 NAME_TO_MODELS = {
-    'sea_bow_w2v': SEA_bow_w2v,
-    'sea_bow_w2v_gru': SEA_bow_w2v_gru,
-    'sea_bow_w2v_bigru': SEA_bow_w2v_bigru,
-    'sea_bow_w2v_bert': SEA_bow_w2v_bert,
-    'sea_bow_w2v_gru_bert': SEA_bow_w2v_gru_bert,
-    'sea_bow_w2v_bigru_bert': SEA_bow_w2v_bigru_bert
+    'sea': SEA
 }
 
 
