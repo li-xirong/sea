@@ -51,7 +51,7 @@ def parse_args():
         '--metric',
         type=str,
         default='mir',
-        choices=['r1', 'r5', 'medr', 'meanr', 'mir', 'sum_recall', 'negRank'],
+        choices=['r1', 'r5', 'medr', 'meanr', 'mir', 'sum_recall'],
         help='performance metric on validation set')
     parser.add_argument('--num_epochs',
                         default=80,
@@ -88,11 +88,9 @@ def parse_args():
     args = parser.parse_args()
     return args
 
-
 def load_config(config_path):
     module = importlib.import_module(config_path)
     return module.config()
-
 
 def main():
     global opt
@@ -117,20 +115,19 @@ def main():
     writer = SummaryWriter(log_dir=model_path, flush_secs=5)
 
     collections = {'train': trainCollection, 'val': valCollection}
-    print(collections)
-
+    # print(collections)
+   
     capfiles = {'train': '%s.caption.txt' % trainCollection}
     cap_file_paths = {
         'train':
         os.path.join(rootpath, trainCollection, 'TextData', capfiles['train'])
     }
-    
 
     vis_feat_files = {
-        x: BigFile(
-            os.path.join(rootpath, collections[x], 'FeatureData',
+        c: BigFile(
+            os.path.join(rootpath, collections[c], 'FeatureData',
                          config.vid_feat))
-        for x in collections
+        for c in collections
     }
     config.vis_fc_layers = list(map(int, config.vis_fc_layers.split('-')))
     if config.vis_fc_layers[0] == 0:
@@ -147,14 +144,26 @@ def main():
                                       'vocab',
                                       'gru_%d.pkl' % (config.threshold))
 
+    # We use a mini set of the whole word2vec model pretrained on flickr data.
+    # If you are explore a new dataset, consider use the complete one.
     w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
 
-
-
+    # cap_feat_names: all the precomputed sentence features, such as 'bert_feature_Layer_-2_uncased_L-12_H-768_A-12'
     cap_feat_names = []
+    # example: config.txt_net_list = ['bow', 'w2v', 'bigru', 'bert']
+    config.txt_net_list = [] 
+
+    for encoding in config.text_encoding.split('@'):
+        config.txt_net_list.append(encoding.split('_')[0])
+
     for encoding in config.text_encoding.split('@'):
         if 'bow' in encoding:
             if opt.resume:
+                '''
+                If your model was pretrained on dataset A and now you want to fine-tune it on dataset B,
+                you should use the bag-of-word vocabulary of dataset A.
+                Because the vocabulary size of 'bag-of'word' of your model depends on dataset A.
+                '''
                 resume_trainCollection = opt.resume.strip('/').split('/')[len(rootpath.strip('/').split('/'))]
                 bow_vocab_file = os.path.join(rootpath, resume_trainCollection, 'TextData', 'vocab', '%s_%d.pkl'%(encoding, config.threshold))
 
@@ -169,25 +178,20 @@ def main():
             rnn_encoding, config.pooling = encoding.split('_', 1)
             config.t2v_idx = get_txt2vec('idxvec')(rnn_vocab_file)
             if config.we_dim == 500:
-                config.we = get_we(config.t2v_idx.vocab, w2v_data_path)
-
-        if 'precomputed_bert' in encoding:      
+                config.we = get_we(config.t2v_idx.vocab, w2v_data_path) # word embedding for RNN
+        
+        if 'bert_precomputed' in encoding:      
             cap_feat_names.append(config.bert_feat_name)
+            config.bert_cap_feat_files = [BigFile(os.path.join(rootpath, trainCollection, 'TextData', 'PrecomputedSentFeat', config.bert_feat_name))]
+            config.bert_cap_feat_files.append(BigFile(os.path.join(rootpath, valCollection, 'TextData', val_set,'PrecomputedSentFeat',config.bert_feat_name)))
 
         if 'w2v' in encoding:
             config.t2v_w2v = get_txt2vec(encoding)(w2v_data_path)
- 
-    cap_feat_file_paths = {
-        'train':
-        [os.path.join(rootpath, trainCollection, 'TextData', val_set,'PrecomputedSentFeat', cap_feat_name) for cap_feat_name in cap_feat_names]
-        ,
-        'val':
-        [os.path.join(rootpath, valCollection, 'TextData', val_set, 'PrecomputedSentFeat', cap_feat_name) for cap_feat_name in cap_feat_names]
-    }
+            config.w2v_out_size = config.t2v_w2v.ndims
 
     config.txt_fc_layers = list(map(int, config.txt_fc_layers.split('-')))
 
-    # Construct the model
+    # Construct and the model and print the details
     config.pre_norm = opt.pre_norm
     if not hasattr(config, 'bidirectional'):
         config.bidirectional = False
@@ -197,7 +201,7 @@ def main():
     if hasattr(config, 'model'):
         model = get_model(config.model)(config)
     else:
-        model = get_model('sea_bow_w2v')(config)
+        model = get_model('sea')(config)
     print(model.vis_net)
     print(model.txt_net)
     vis_net_params = sum(p.numel() for p in model.vis_net.parameters())
@@ -217,59 +221,24 @@ def main():
                 os.path.join(rootpath, collections['val'], 'VideoSets',
                              '%s.txt' % collections['val']))))
 
-    if hasattr(config,
-               'model') and config.model in ['multispace_visnetvlad_bow_w2v']:
-        train_loader = data.frame_pair_provider({
-            'vis_feat':
-            vis_feat_files['train'],
-            'capfile':
-            cap_file_paths['train'],
-            'pin_memory':
-            True,
-            'batch_size':
-            opt.batch_size,
-            'num_workers':
-            opt.workers,
-            'shuffle':
-            True
-        })
-        val_vis_loader = data.frame_provider({
-            'vis_feat': vis_feat_files['val'],
-            'vis_ids': val_vis_ids,
-            'pin_memory': True,
-            'batch_size': opt.batch_size,
-            'num_workers': opt.workers
-        })
-    else:
-        # train_loader = data.pair_provider({
-        #     'vis_feat': vis_feat_files['train'],
-        #     'capfile': cap_file_paths['train'],
-        #     'pin_memory': True,
-        #     'batch_size': opt.batch_size,
-        #     'num_workers': opt.workers,
-        #     'shuffle': True,
-        #     'caption_mask': caption_mask
-        # })
-        train_loader = data.pair_provider_with_cap_feat({
-            'vis_feat': vis_feat_files['train'],
-            'capfile': cap_file_paths['train'],
-            'cap_feature_names': cap_feat_names, 
-            'cap_feature_file_paths':cap_feat_file_paths['train'],
-            'pin_memory': True,
-            'batch_size': opt.batch_size,
-            'num_workers': opt.workers,
-            'shuffle': True,
-            'caption_mask': caption_mask
-        })
-        
+    train_loader = data.pair_provider({
+        'vis_feat': vis_feat_files['train'],
+        'capfile': cap_file_paths['train'],
+        'pin_memory': True,
+        'batch_size': opt.batch_size,
+        'num_workers': opt.workers,
+        'shuffle': True,
+        'caption_mask': caption_mask
+    })
+    
+    val_vis_loader = data.vis_provider({
+        'vis_feat': vis_feat_files['val'],
+        'vis_ids': val_vis_ids,
+        'pin_memory': True,
+        'batch_size': opt.batch_size,
+        'num_workers': opt.workers
+    })
 
-        val_vis_loader = data.vis_provider({
-            'vis_feat': vis_feat_files['val'],
-            'vis_ids': val_vis_ids,
-            'pin_memory': True,
-            'batch_size': opt.batch_size,
-            'num_workers': opt.workers
-        })
     if valCollection == 'iacc.3' or valCollection == 'gcc11val':
         cap_file_paths['val'] = os.path.join(rootpath, valCollection,
                                              'TextData', val_set)
@@ -284,16 +253,8 @@ def main():
                                              'TextData', val_set,
                                              '%s.caption.txt' % valCollection)
         
-        # val_txt_loader = data.txt_provider({
-        #     'capfile': cap_file_paths['val'],
-        #     'pin_memory': True,
-        #     'batch_size': opt.batch_size,
-        #     'num_workers': opt.workers
-        # })
-        val_txt_loader = data.txt_provider_with_cap_feat({
+        val_txt_loader = data.txt_provider({
             'capfile': cap_file_paths['val'],
-            'cap_feature_names': cap_feat_names, 
-            'cap_feature_file_paths':cap_feat_file_paths['val'],
             'pin_memory': True,
             'batch_size': opt.batch_size,
             'num_workers': opt.workers
@@ -339,7 +300,7 @@ def main():
             filename='checkpoint_epoch_0.pth.tar')
 
     # Train the Model
-    no_impr_counter = 0
+    no_improve_counter = 0
     val_perf_hist_fout = open(os.path.join(model_path, 'val_perf_hist.txt'),
                               'w')
     for epoch in range(opt.num_epochs):
@@ -391,10 +352,10 @@ def main():
             only_best=True,
             filename='checkpoint_epoch_%s.pth.tar' % epoch)
         if is_best:
-            no_impr_counter = 0
+            no_improve_counter = 0
         else:
-            no_impr_counter += 1
-            if no_impr_counter > 10:
+            no_improve_counter += 1
+            if no_improve_counter > 10:
                 print('Early stopping happended.\n')
                 break
 
@@ -416,13 +377,13 @@ def train(model, train_loader, fw=None):
 
     progbar = Progbar(len(train_loader.dataset))
     end = time.time()
-    for i, train_data in enumerate(train_loader):
+    for _, train_data in enumerate(train_loader):
 
         data_time.update(time.time() - end)
 
-        vis_feats, captions, _, vis_ids, cap_ids, cap_features = train_data
+        vis_feats, captions, _, vis_ids, cap_ids = train_data
         # loss, indices_im = model.train(txt_input, cap_ids, vis_input, vis_ids)
-        loss, indices_im = model.train(captions, cap_ids, cap_features, vis_feats, vis_ids)
+        loss, indices_im = model.train(captions, cap_ids,  vis_feats, vis_ids)
 
         progbar.add(len(vis_feats),
                     values=[('data_time', data_time.val),
@@ -434,6 +395,7 @@ def train(model, train_loader, fw=None):
 
         # Record logs in tensorboard
         writer.add_scalar('train/Loss', loss, model.iters)
+        
         #if fw is not None:
         #    for j, cap_id in enumerate(cap_ids):
         #        fw.write('%s %s\n' % (cap_id, ' '.join([vis_ids[k] for k in indices_im[j]])))
@@ -468,8 +430,7 @@ def validate(model, val_loader, epoch, metric='mir'):
         label_matrix[index][np.where(
             np.array(vis_ids)[ind] == txt_ids[index].split('#')[0])[0]] = 1
 
-    (r1, r5, r10, medr, meanr, mir, mAP,
-     negRank) = evaluation.eval(label_matrix)
+    (r1, r5, r10, medr, meanr, mir, mAP) = evaluation.eval(label_matrix)
     sum_recall = r1 + r5 + r10
     print(" * Text to video:")
     print(" * r_1_5_10: {}".format([round(r1, 3),
@@ -503,17 +464,13 @@ def validate_v2(model, txt_loader, vis_loader, epoch, metric='mir'):
 
     inds = np.argsort(txt2vis_sim, axis=1)  
 
-    # print(inds.shape) size:200*200
-    # print("\n inds: \n", inds) #test
-
     label_matrix = np.zeros(inds.shape)
     for index in range(inds.shape[0]):  
         ind = inds[index][::-1]  
         label_matrix[index][np.where(
             np.array(vis_ids)[ind] == txt_ids[index].split('#')[0])[0]] = 1
 
-    (r1, r5, r10, medr, meanr, mir, mAP,
-     negRank) = evaluation.eval(label_matrix)
+    (r1, r5, r10, medr, meanr, mir, mAP) = evaluation.eval(label_matrix)
     sum_recall = r1 + r5 + r10
     print(" * Text to video:")
     print(" * r_1_5_10: {}".format([round(r1, 3),
@@ -523,7 +480,6 @@ def validate_v2(model, txt_loader, vis_loader, epoch, metric='mir'):
         [round(medr, 3), round(meanr, 3),
          round(mir, 3)]))
     print(" * mAP: {}".format(round(mAP, 3)))
-    print(" * negRank: {}".format(round(negRank, 3)))
     print(" * " + '-' * 10)
 
     vis2txt_sim = txt2vis_sim.T
@@ -535,8 +491,7 @@ def validate_v2(model, txt_loader, vis_loader, epoch, metric='mir'):
         label_matrix[index][np.where(
             np.array(txt_ids)[ind] == vis_ids[index])[0]] = 1
 
-    (r1i, r5i, r10i, medri, meanri, miri, mAPi,
-     negRanki) = evaluation.eval(label_matrix)
+    (r1i, r5i, r10i, medri, meanri, miri, mAPi) = evaluation.eval(label_matrix)
     sum_recall += r1i + r5i + r10i
     print(" * Video to text:")
     print(" * r_1_5_10: {}".format(
@@ -546,7 +501,6 @@ def validate_v2(model, txt_loader, vis_loader, epoch, metric='mir'):
         [round(medri, 3), round(meanri, 3),
          round(miri, 3)]))
     print(" * mAP: {}".format(round(mAPi, 3)))
-    print(" * negRank: {}".format(round(negRank, 3)))
     print(" * " + '-' * 10)
 
     writer.add_scalar('val/r1', r1, epoch)
@@ -556,7 +510,6 @@ def validate_v2(model, txt_loader, vis_loader, epoch, metric='mir'):
     writer.add_scalar('val/meanr', meanr, epoch)
     writer.add_scalar('val/mir', mir, epoch)
     writer.add_scalar('val/mAP', mAP, epoch)
-    writer.add_scalar('val/negRank', negRank, epoch)
 
     return locals().get(metric, mir)
 

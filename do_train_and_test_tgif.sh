@@ -5,7 +5,7 @@ valCollection=tgifval
 testCollection=tgiftest
 
 
-if [ "$#" -ne 2];then
+if [ "$#" -ne 2 ];then
     echo "Usage: $0 config gpuID"
     exit
 fi

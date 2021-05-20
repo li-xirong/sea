@@ -1,5 +1,5 @@
 # Sea
-Souce code of the papar: [SEA: Sentence Encoder Assembly for Video Retrieval by Textual Queries](https://arxiv.org/abs/2011.12091). 
+Source code of the papar: [SEA: Sentence Encoder Assembly for Video Retrieval by Textual Queries](https://arxiv.org/abs/2011.12091). 
 
 
 ![image](framework.png)

@@ -1,14 +1,21 @@
-
 class config(object):
-    model = 'SEA_bow_w2v_gru'
+    model = 'sea'
     
     text_encoding = 'bow_nsw@w2v_nsw@gru_mean'
+
     threshold = 5
     bow_norm = 0
     we_dim = 500
     rnn_size = 1024
     rnn_layer = 1
 
+
+    bert_out_size = 768
+    bert_feat_name = 'bert_feature_Layer_-2_uncased_L-12_H-768_A-12'
+    # for oneline bert encoder using 'bert-as-service'
+    bert_service_ip = '10.77.50.197'
+    bert_port = 1234
+    bert_port_out = 4321
 
     txt_fc_layers = '0-2048'
     txt_norm = 2 # L_2 norm

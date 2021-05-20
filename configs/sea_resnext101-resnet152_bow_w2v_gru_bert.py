@@ -1,13 +1,14 @@
-
 class config(object):
-    model = 'SEA_bow_w2v_gru_bert'
+    model = 'sea'
     
-    text_encoding = 'bow_nsw@w2v_nsw@gru_mean@precomputed_bert'
+    text_encoding = 'bow_nsw@w2v_nsw@gru_mean@bert_precomputed'
+
     threshold = 5
     bow_norm = 0
     we_dim = 500
     rnn_size = 1024
     rnn_layer = 1
+
 
     bert_out_size = 768
     bert_feat_name = 'bert_feature_Layer_-2_uncased_L-12_H-768_A-12'
