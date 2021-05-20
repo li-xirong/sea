@@ -35,15 +35,15 @@ class MarginRankingLoss(nn.Module):
     """
     Compute margin ranking loss
     """
-    def __init__(self, margin=0, measure='cosine', max_violation=False, cost_style='sum', direction='bidir'):
+    def __init__(self, margin=0, similarity='cosine', max_violation=False, cost_style='sum', direction='bidir'):
         super(MarginRankingLoss, self).__init__()
         self.margin = margin
         self.cost_style = cost_style
         self.direction = direction
-        if measure == 'cosine':
+        if similarity == 'cosine':
             self.sim = cosine_sim
         else:
-            raise Exception('Not implemented.')
+            raise Exception('Similarity %s not implemented.' % similarity)
 
         self.max_violation = max_violation
 
