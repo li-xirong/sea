@@ -1,3 +1,4 @@
+import os
 import copy
 import time
 from collections import OrderedDict
@@ -58,13 +59,46 @@ def _initialize_weights(m):
         nn.init.zeros_(m.bias)
 
 
+class SentFeatBase():
+    def __init__(self, collection_sent_feat_dirs:list, feat_name:str) -> None:
+        """
+        """
+        self.feat_name = feat_name
+        self.feat_file_list = []
+        for d in collection_sent_feat_dirs:
+            feat_path = os.path.join(d, self.feat_name)
+            feat_file = BigFile(feat_path)
+            self.feat_file_list.append(feat_file)
+        
+        self.names = []
+        for f in self.feat_file_list:
+            self.names += f.names
+        self.names = set(self.names)
+
+    def read(self, cap_ids):
+        feat_file = None
+        for f in self.feat_file_list:
+            if cap_ids[0] in f.names:
+                feat_file = f
+                break
+        assert (feat_file != None)
+        feature = [f.read_one(cap_id) for cap_id in cap_ids]
+        
+        return feature
+
+
 class IdentityNet(nn.Module):
     def __init__(self, opt):
         super().__init__()
+        self.output_size = opt.vis_fc_layers[0]
 
     def forward(self, input_x):
         """Extract image feature vectors."""
         return input_x.to(device)
+
+    def get_output_size(self):
+        return self.output_size
+       
 
 
 class TransformNet(nn.Module):
@@ -143,12 +177,18 @@ class VisNet(nn.Module):
     def _init_transformer(self, opt):
         self.transformer = TransformNet(opt)
 
+    def get_output_size(self, opt):
+        return opt.vis_fc_layers[1]
+
     def __init__(self, opt):
         super().__init__()
         self._init_encoder(opt)
         # adjust the input size of the transformer 
         opt2 = copy.copy(opt)
-        opt2.fc_layers[0] = self.encoder.get_output_size()
+        opt2.fc_layers = [self.encoder.get_output_size(), self.get_output_size(opt)]
+        # opt2.fc_layers[0] = self.encoder.get_output_size()
+        # opt2.fc_lay
+        # import pdb; pdb.set_trace()
         self._init_transformer(opt2)
 
     def forward(self, vis_input):
@@ -205,12 +245,13 @@ class BoWTxtEncoder(TxtEncoder):
         return out
 
 
-class W2VTxtEncoder(TxtEncoder):
+class W2VTxtEncoder(BoWTxtEncoder):
     def __init__(self, opt):
         super().__init__(opt)
         self.t2v = opt.t2v_w2v
         self.l2norm = opt.w2v_encoder_l2norm if hasattr(opt, 'w2v_encoder_l2norm') else False
-        self.output_size = opt.tv2_w2v.ndims
+        self.output_size = opt.t2v_w2v.ndims
+    
         
 
 class GruTxtEncoder(TxtEncoder):
@@ -345,23 +386,24 @@ class BertTxtEncoder(TxtEncoder):
                                  check_version=False)
             self.is_online = True
             logger.info('Use BertClient')
-        elif 'bert_precomputed' opt.text_encoding:
-            # self.bert_feature_name = opt.bert_feat_name
-                
-            self.txt_bert_feat_file = opt.txt_bert_feat_file
+        elif 'bert_precomputed' in opt.text_encoding:
+            self.bert_feat_base = opt.bert_feat_base
             self.has_precomputed = True
             logger.info('Use precomputed bert features')
         assert (self.is_online or self.has_precomputed) 
+
+        self.output_size = opt.bert_out_size
         self.l2norm = opt.bert_encoder_l2norm if hasattr(opt, 'bert_encoder_l2norm') else False
         
 
     def forward(self, txt_input):
         captions, cap_ids = txt_input
-        assert( cap_ids[0] in self.txt_bert_feat_file.names)
+        assert( cap_ids[0] in self.bert_feat_base.names)
  
-        # We prefer to use the precompute features for efficiency
+        # We prefer to use the precomputed features for efficiency
         if self.has_precomputed:
-            bert_feature = [self.txt_bert_feat_file.read_one(cap_id) for cap_id in cap_ids]
+            bert_feature = self.bert_feat_base.read(cap_ids)
+            # bert_feature = [self.txt_bert_feat_file.read_one(cap_id) for cap_id in cap_ids]
             out = torch.Tensor(bert_feature).to(device)
         else:
             out = torch.Tensor(self.bc.encode(captions)).to(device)
@@ -374,6 +416,9 @@ class BertTxtEncoder(TxtEncoder):
 class TxtNet(VisNet):
     def _init_encoder(self, opt):
         self.encoder = TxtEncoder(opt)
+    
+    def get_output_size(self, opt):
+        return opt.txt_fc_layers[1]
 
 
 class BoWTxtNet(TxtNet):
@@ -413,6 +458,7 @@ class GruTxtNet_mean_last(GruTxtNet):
 class BiGruTxtNet(GruTxtNet):
     def _init_encoder(self, opt):
         self.encoder = BiGruTxtEncoder(opt)
+
 
 class BertTxtNet(TxtNet):
     def _init_encoder(self, opt):
@@ -456,7 +502,7 @@ class MultiSpaceVisNet(nn.Module):
     def __init__(self, opt):
         super().__init__()
         self.num_of_spaces = len(opt.txt_net_list)
-        self.vis_nets = [TransformNet(opt) for x in range(self.num_of_spaces)]
+        self.vis_nets = [VisNet(opt) for x in range(self.num_of_spaces)]
         self.vis_nets = nn.ModuleList(self.vis_nets)
 
     def forward(self, vis_input):
@@ -557,7 +603,7 @@ class CrossModalNet(object):
         self.iters += 1
 
         # compute the embeddings
-        txt_input = tuple([captions, cap_ids])
+        txt_input = (captions, cap_ids)
 
         txt_embs = self.txt_net(txt_input)
         vis_embs = self.vis_net(vis_feats)
@@ -575,7 +621,6 @@ class CrossModalNet(object):
         self.optimizer.step()
 
         return loss_value, indices_im
-
 
     def embed_vis(self, vis_input):
         self.switch_to_eval()
@@ -682,7 +727,7 @@ class SEA (CrossModalNet):
  
 
 NAME_TO_MODEL = {
-    'naive': NaiveCMNet
+    'naive': NaiveCMNet,
     'sea': SEA
 }
 

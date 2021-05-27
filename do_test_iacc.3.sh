@@ -26,4 +26,5 @@ fi
 gpu=$2
 CUDA_VISIBLE_DEVICES=$gpu python predictor.py $testCollection $model_path $sim_name \
     --query_sets $query_sets \
-    --rootpath $rootpath  --overwrite $overwrite 
+    --rootpath $rootpath \
+    --overwrite $overwrite 

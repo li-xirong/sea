@@ -19,7 +19,7 @@ from common import *
 from bigfile import BigFile
 from txt2vec import get_txt2vec
 from generic_utils import Progbar
-from model import get_model, get_we
+from model import get_model, get_we, SentFeatBase
 
 
 def parse_args():
@@ -148,8 +148,8 @@ def main():
     # If you are explore a new dataset, consider use the complete one.
     w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
 
-    # cap_feat_names: all the precomputed sentence features, such as 'bert_feature_Layer_-2_uncased_L-12_H-768_A-12'
-    cap_feat_names = []
+    # sent_feat_names: all the precomputed sentence features, such as 'bert_feature_Layer_-2_uncased_L-12_H-768_A-12'
+    sent_feat_names = []
     # example: config.txt_net_list = ['bow', 'w2v', 'bigru', 'bert']
     config.txt_net_list = [] 
 
@@ -181,11 +181,14 @@ def main():
                 config.we = get_we(config.t2v_idx.vocab, w2v_data_path) # word embedding for RNN
         
         if 'bert_precomputed' in encoding:      
-            cap_feat_names.append(config.bert_feat_name)
-            config.bert_cap_feat_files = [BigFile(os.path.join(rootpath, trainCollection, 'TextData', 'PrecomputedSentFeat', config.bert_feat_name))]
-            config.bert_cap_feat_files.append(BigFile(os.path.join(rootpath, valCollection, 'TextData', val_set,'PrecomputedSentFeat',config.bert_feat_name)))
+            sent_feat_names.append(config.bert_feat_name)
+            bert_file_dir_list = []
+            bert_file_dir_list.append(os.path.join(rootpath, trainCollection, 'SentFeatureData', '%s.caption.txt' % trainCollection))
+            bert_file_dir_list.append(os.path.join(rootpath, valCollection, 'SentFeatureData', val_set, '%s.caption.txt' % valCollection))
 
-        if 'w2v' in encoding:
+            config.bert_feat_base = SentFeatBase(bert_file_dir_list , config.bert_feat_name)
+            
+        if 'w2v' in encoding or 'netvlad' in encoding:
             config.t2v_w2v = get_txt2vec(encoding)(w2v_data_path)
             config.w2v_out_size = config.t2v_w2v.ndims
 
@@ -457,6 +460,7 @@ def validate_v2(model, txt_loader, vis_loader, epoch, metric='mir'):
     # compute the encoding for all the validation videos and captions
     ## video retrieval
     ## Multi-Space
+
     txt2vis_sim, txt_ids, vis_ids = model.predict(txt_loader, vis_loader)
 
     assert txt2vis_sim.shape == (len(txt_ids), len(vis_ids)), 'txt2vis_sim.shape%s not match (txt_ids(%s),vis_ids(%s))' % \

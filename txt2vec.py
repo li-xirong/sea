@@ -46,7 +46,7 @@ class Txt2Vec(object):
 
 class BowVec(Txt2Vec):
     def __init__(self, data_path, norm=0, clean=True):
-        super(BowVec, self).__init__(data_path, norm, clean)
+        super().__init__(data_path, norm, clean)
         self.vocab = pickle.load(open(data_path, 'rb'))
         self.ndims = len(self.vocab)
         logger.info('vob size: %d, vec dim: %d' %
@@ -64,7 +64,7 @@ class BowVec(Txt2Vec):
 
 class SoftBowVec(Txt2Vec):
     def __init__(self, data_path, thresh=5, norm=0, clean=True):
-        super(SoftBowVec, self).__init__(data_path, norm, clean)
+        super().__init__(data_path, norm, clean)
         self.vocab = pickle.load(open(data_path, 'rb'))
         self.ndims = len(self.vocab)
         self.thresh = thresh
@@ -85,7 +85,7 @@ class SoftBowVec(Txt2Vec):
 
 class SoftBowVecNSW(SoftBowVec):
     def __init__(self, data_path, thresh=5, norm=0, clean=True):
-        super(SoftBowVecNSW, self).__init__(data_path, thresh, norm, clean)
+        super().__init__(data_path, thresh, norm, clean)
         if '_nsw' not in data_path:
             logger.error(
                 'WARNING: loaded a vocabulary that contains stopwords')
@@ -100,7 +100,7 @@ class SoftBowVecNSW(SoftBowVec):
 
 class W2Vec(Txt2Vec):
     def __init__(self, data_path, norm=0, clean=True):
-        super(W2Vec, self).__init__(data_path, norm, clean)
+        super().__init__(data_path, norm, clean)
         self.w2v = BigFile(data_path)
         vocab_size, self.ndims = self.w2v.shape()
         logger.info('vob size: %d, vec dim: %d' % (vocab_size, self.ndims))
@@ -127,7 +127,7 @@ class W2Vec(Txt2Vec):
 
 class InferVec(Txt2Vec):
     def __init__(self, model_path, norm=0, clean=True):
-        super(InferVec, self).__init__(model_path, norm, clean)
+        super().__init__(model_path, norm, clean)
         self.ndims = 4096
 
         params_model = {
@@ -168,7 +168,7 @@ class InferVec(Txt2Vec):
 
 class IndexVec(Txt2Vec):
     def __init__(self, data_path, clean=True):
-        super(IndexVec, self).__init__(data_path, 0, clean)
+        super().__init__(data_path, 0, clean)
         self.vocab = pickle.load(open(data_path, 'rb'))
         logger.info('vob size: %s' % (len(self.vocab)))
 
@@ -186,7 +186,7 @@ class IndexVec(Txt2Vec):
 
 class BowVecNSW(BowVec):
     def __init__(self, data_path, norm=0, clean=True):
-        super(BowVecNSW, self).__init__(data_path, norm, clean)
+        super().__init__(data_path, norm, clean)
         if '_nsw' not in data_path:
             logger.error(
                 'WARNING: loaded a vocabulary that contains stopwords')
@@ -208,25 +208,25 @@ class W2VecNSW(W2Vec):
         return words
 
 
-class PrecomputedSentFeat(object):
-    def __init__(self, collection, sent_feat_name, rootpath):
-        logger.info(self.__class__.__name__ + ' initializing ...')
-        sent_feat_file_path = os.path.join(rootpath, collection, 'TextData',
-                                           'PrecomputedSentFeat',
-                                           sent_feat_name)
-        self.s2v = BigFile(sent_feat_file_path)
-        vocab_size, self.ndims = self.s2v.shape()
-        logger.info('vob size: %d, vec dim: %d' % (vocab_size, self.ndims))
+# class PrecomputedSentFeat(object):
+#     def __init__(self, collection, sent_feat_name, rootpath):
+#         logger.info(self.__class__.__name__ + ' initializing ...')
+#         sent_feat_file_path = os.path.join(rootpath, collection, 'TextData',
+#                                            'PrecomputedSentFeat',
+#                                            sent_feat_name)
+#         self.s2v = BigFile(sent_feat_file_path)
+#         vocab_size, self.ndims = self.s2v.shape()
+#         logger.info('vob size: %d, vec dim: %d' % (vocab_size, self.ndims))
 
-    def encoding(self, cap_ids):
-        """Convert ids of captions to corresponding precomputed features.
+#     def encoding(self, cap_ids):
+#         """Convert ids of captions to corresponding precomputed features.
         
-        Note that the paramete is 'cap_ids' instead of 'query'.
-        """
-        return [self.s2v.read_one(cap_id) for cap_id in cap_ids]
-        # return [ [ 0 for i in range(768)] for cap_id in cap_ids]
-        # _, vectors = self.s2v.read(cap_ids)
-        # return vectors
+#         Note that the paramete is 'cap_ids' instead of 'query'.
+#         """
+#         return [self.s2v.read_one(cap_id) for cap_id in cap_ids]
+#         # return [ [ 0 for i in range(768)] for cap_id in cap_ids]
+#         # _, vectors = self.s2v.read(cap_ids)
+#         # return vectors
 
 
 NAME_TO_T2V = {
@@ -238,7 +238,7 @@ NAME_TO_T2V = {
     'w2v_nsw': W2VecNSW,
     'idxvec': IndexVec,
     'infersent': InferVec,
-    'precomputed_sent_feature': PrecomputedSentFeat,
+    # 'precomputed_sent_feature': PrecomputedSentFeat,
 }
 
 
