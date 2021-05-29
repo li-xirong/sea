@@ -149,7 +149,7 @@ def main():
     w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
 
     # sent_feat_names: all the precomputed sentence features, such as 'bert_feature_Layer_-2_uncased_L-12_H-768_A-12'
-    sent_feat_names = []
+    config.sent_feat_names = []
     # example: config.txt_net_list = ['bow', 'w2v', 'bigru', 'bert']
     config.txt_net_list = [] 
 
@@ -181,7 +181,7 @@ def main():
                 config.we = get_we(config.t2v_idx.vocab, w2v_data_path) # word embedding for RNN
         
         if 'bert_precomputed' in encoding:      
-            sent_feat_names.append(config.bert_feat_name)
+            config.sent_feat_names.append(config.bert_feat_name)
             bert_file_dir_list = []
             bert_file_dir_list.append(os.path.join(rootpath, trainCollection, 'SentFeatureData', '%s.caption.txt' % trainCollection))
             bert_file_dir_list.append(os.path.join(rootpath, valCollection, 'SentFeatureData', val_set, '%s.caption.txt' % valCollection))

@@ -13,7 +13,7 @@ import util
 import evaluation
 import data_provider as data
 from common import *
-from model import get_model
+from model import get_model, SentFeatBase
 from bigfile import BigFile
 from generic_utils import Progbar
 
@@ -95,16 +95,15 @@ def main():
         config.t2v_w2v.w2v.binary_file = w2v_feature_file
     
     for encoding in config.text_encoding.split('@'):
-        if 'bert_precomputed' in encoding:
+        if encoding == 'bert_precomputed':
+            bert_file_dir_list = []
             if testCollection not in ['iacc.3', 'v3c1']:
-                config.bert_cap_feat_files = [BigFile(os.path.join(rootpath, testCollection, \
-                    'TextData', 'PrecomputedSentFeat', config.bert_feat_name))]
+                bert_file_dir_list.append(os.path.join(rootpath, testCollection, 'SentFeatureData', '%s.caption.txt' % testCollection))
             else:
-                config.bert_cap_feat_files = [BigFile(os.path.join(rootpath, testCollection, \
-                'TextData', 'PrecomputedSentFeat', "%s.%s"%(q, config.bert_feat_name))) \
-                    for q in opt.query_sets.split(',')]
-
-
+                for query_set in opt.query_sets.split(','):
+                    bert_file_dir_list.append(rootpath, testCollection, 'SentFeatureData', query_set)
+            config.bert_feat_base = SentFeatBase(bert_file_dir_list , config.bert_feat_name)
+            
     # Construct the model
     if not hasattr(config, 'bidirectional'):
         config.bidirectional = False
@@ -148,8 +147,6 @@ def main():
         'num_workers': opt.num_workers
     })
 
-    vis_embs = None
-
     for query_set in opt.query_sets.split(','):
         output_dir = os.path.join(rootpath, testCollection, 'SEA_predict_results',
                                   query_set, opt.sim_name)
@@ -169,27 +166,6 @@ def main():
             'num_workers': opt.num_workers
         })
 
-
-        opt.save_embs = False
-        if opt.save_embs:
-            txt_embs, vis_embs = None, None
-            for i,(captions, _, _, cap_features) in enumerate(txt_loader):
-                txt_emb = model.txt_net(captions, cap_features)
-                # import pdb; pdb.set_trace()
-                txt_embs = txt_emb if i==0 else torch.cat((txt_embs, txt_emb), dim=0)
-                
-                
-            for j, (vis_input, _, _) in enumerate(vis_loader):
-                vis_emb = model.vis_net(vis_input).cpu()
-                vis_embs = vis_emb if j==0 else torch.cat((vis_embs, vis_emb), dim=0)
-            import pdb; pdb.set_trace()
-            txt_embeds_file = os.path.join(rootpath, testCollection, 'Emdebs', 'txt_embs.pth')
-            vis_embeds_file = os.path.join(rootpath, testCollection, 'Emdebs', 'vis_embs.pth')
-             
-            torch.save(txt_embs, txt_embeds_file)  
-            torch.save(vis_embs, vis_embeds_file)  
-            
-            exit(0)
 
         logger.info('Model prediction ...')
         t2i_matrix, txt_ids, vis_ids = model.predict(txt_loader, vis_loader)
