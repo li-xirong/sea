@@ -1,5 +1,5 @@
 # Sea
-Source code of the papar: [SEA: Sentence Encoder Assembly for Video Retrieval by Textual Queries](https://arxiv.org/abs/2011.12091). 
+Source code of our TMM paper: [SEA: Sentence Encoder Assembly for Video Retrieval by Textual Queries](https://doi.org/10.1109/TMM.2020.3042067). 
 
 
 ![image](framework.png)
@@ -15,8 +15,7 @@ The code assumes [video-level CNN features](https://github.com/xuchaoxi/video-cn
 * tensorboard 2.1.0
 * numpy 1.19.5
 
-We used Anaconda to setup a deep learning workspace that supports PyTorch. Run the following script to install the required packages.
-This is an example of creating an conda environment.
+We used Anaconda to setup a deep learning workspace that supports PyTorch. Run the following script to install all the required packages.
 ```
 conda create -n sea python==3.7
 conda activate sea
@@ -74,21 +73,13 @@ pip install -r requirements.txt
 ROOTPATH=$HOME/VisualSearch
 mkdir -p $ROOTPATH; cd $ROOTPATH
 
-# download and extract pre-trained word2vec-mini 
-wget
-tar zxf w2v-flickr-mini.tar.gz
-# download and extract all the required data of msrvtt10k
-wget
-tar zxf msrvtt10k.tar.gz
-# download and extract all the required data of AVS
-wget
-tar zxf AVS.tar.gz
-# download and extract all the required data of msvd
-wget
-tar zxf msvd.tar.gz
-# download and extract all the required data of tgif
-wget
-tar zxftgif.tar.gz
+# download a mini-version of a word2vec model trained on Flickr tags. 
+wget http://lixirong.net/data/sea/w2v-flickr-mini.tar.gz
+tar xzf w2v-flickr-mini.tar.gz
+
+# download the MSVD data package 
+wget http://lixirong.net/data/sea/msvd.tar.gz
+tar xzf msvd.tar.gz
 ```
 
 
@@ -98,40 +89,16 @@ tar zxftgif.tar.gz
 # activate the conda environment
 conda activate sea
 
-# build vocabulary on the training dataset
-bash do_build_vocab.sh msrvtt10ktrain
-bash do_build_vocab.sh tgiftrain
-bash do_build_vocab.sh msvdtrain
-bash do_build_vocab.sh tgif-msrvtt10k
-
-# choose one model config you want to ues
-config=sea_resnext101-resnet152_bow_w2v
-config=sea_resnext101-resnet152_bow_w2v_gru
-config=sea_resnext101-resnet152_bow_w2v_bigru
+# choose a specific text-encoder configuraiton
 config=sea_resnext101-resnet152_bow_w2v_bert
-config=sea_resnext101-resnet152_bow_w2v_gru_bert
-config=sea_resnext101-resnet152_bow_w2v_bigru_bert
 
-# use the first GPU on your device
+# choose a specifc GPU card
 gpu_id=0 
-
-# do train and test on msrvtt10k
-bash do_train_and_test_msrvtt10k $config $gpu_id
 
 # do train and test on msvd
 bash do_train_and_test_msvd.sh $config $gpu_id
-
-# do train and test on tgif
-bash do_train_and_test_tgif.sh $config $gpu_id
-
-# for AVS, do train on tgif-msrvtt10k and test on iacc.3 or v3c1.
-bash do_train_tgif-msrvtt10k.sh $config $gpu_id
-bash do_test_iacc.3.sh $config $gpu_id
-bash do_test_v3c1.sh $config $gpu_id
-# for AVS, do evaluation on topics of tv16-20
-cd tv-avs-eval
-bash do_eval.sh $config
 ```
+
 ### Test and evaluate a pre-trained model
 to do
 
