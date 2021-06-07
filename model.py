@@ -30,12 +30,8 @@ def get_we(vocab, w2v_dir):
     we = np.random.uniform(low=-1.0, high=1.0, size=(nr_words, ndims))
 
     renamed, vecs = w2v.read(words)
-    #import pdb; pdb.set_trace()
-    #dict(zip(vocab, range(nr_words-1)))
-
     for i, word in enumerate(renamed):
         idx = vocab.word2idx[word]
-        #idx = word_to_idx[word] 
         we[idx] = vecs[i]
 
     return torch.Tensor(we)

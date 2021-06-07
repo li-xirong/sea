@@ -43,7 +43,7 @@ class config(object):
     # cost style (sum|mean)
     cost_style = 'sum'      # only valid for mrl loss
     # Similarity measure used (cosine|order)
-    measure = 'cosine'
+    similarity = 'cosine'
 
     # optimizer
     optimizer ='rmsprop'
