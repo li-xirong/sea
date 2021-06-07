@@ -16,3 +16,4 @@ workplace/caption_files_union/VATEX_fulltrain.caption.txt
 workplace/caption_files_union/VATEX_fullval.caption.txt
 build_union_vocab.py
 .vscode/settings.json
+*.py.swp
