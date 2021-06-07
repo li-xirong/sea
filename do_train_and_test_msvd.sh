@@ -9,6 +9,9 @@ if [ "$#" -ne 2 ];then
     exit
 fi
 
+# build a vocabulary on the training set
+bash do_build_vocab.sh $trainCollection
+
 # config=sea_resnext101-resnet152_bow_w2v
 # config=sea_resnext101-resnet152_bow_w2v_gru
 # config=sea_resnext101-resnet152_bow_w2v_bigru
