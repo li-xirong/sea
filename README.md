@@ -1,9 +1,5 @@
-# Sea
+# SEA for Cross-Modal Video Retrieval
 Source code of our TMM paper: [SEA: Sentence Encoder Assembly for Video Retrieval by Textual Queries](https://doi.org/10.1109/TMM.2020.3042067). 
-
-
-![image](framework.png)
-
 The code assumes [video-level CNN features](https://github.com/xuchaoxi/video-cnn-feat) have been extracted. 
 
 
@@ -24,10 +20,28 @@ cd sea
 pip install -r requirements.txt
 ```
 
-## Required Data
-### Data arrangement
+## Data
+
+
+### Get data
 ```bash
-# Use msvd as an example.
+ROOTPATH=$HOME/VisualSearch
+mkdir -p $ROOTPATH; cd $ROOTPATH
+
+# download a mini-version of a word2vec model trained on Flickr tags. 
+wget http://lixirong.net/data/sea/w2v-flickr-mini.tar.gz
+tar xzf w2v-flickr-mini.tar.gz
+
+# download the MSVD data package 
+wget http://lixirong.net/data/sea/msvd.tar.gz
+tar xzf msvd.tar.gz
+```
+
+### Data organization
+
+We use MSVD as an example. Other collections such as MSR-VTT and TGIF are organized in a similar style.
+
+```bash
 ├── msvd
 │   ├── FeatureData
 │   │   └── mean_resnext101_resnet152
@@ -68,22 +82,10 @@ pip install -r requirements.txt
           └── msvdtest.txt
 ```
 
-### Get data
-```bash
-ROOTPATH=$HOME/VisualSearch
-mkdir -p $ROOTPATH; cd $ROOTPATH
-
-# download a mini-version of a word2vec model trained on Flickr tags. 
-wget http://lixirong.net/data/sea/w2v-flickr-mini.tar.gz
-tar xzf w2v-flickr-mini.tar.gz
-
-# download the MSVD data package 
-wget http://lixirong.net/data/sea/msvd.tar.gz
-tar xzf msvd.tar.gz
-```
 
 
-## Scripts for training, testing, and evaluation
+## Tutorial scripts
+
 ### Train and test from sratch
 ```bash
 # activate the conda environment
@@ -102,7 +104,7 @@ bash do_train_and_test_msvd.sh $config $gpu_id
 ### Test and evaluate a pre-trained model
 to do
 
-## Reported performance
+## Performance
 
 ### msrvtt10k
 Sentence encoder        |Model |R@1 |R@5 |R@10|Med r|mAP        |
