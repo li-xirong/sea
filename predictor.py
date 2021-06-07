@@ -16,6 +16,7 @@ from common import *
 from model import get_model, SentFeatBase
 from bigfile import BigFile
 from generic_utils import Progbar
+from txt2vec import W2Vec, W2VecNSW
 
 
 def parse_args():
@@ -88,11 +89,15 @@ def main():
     epoch = checkpoint['epoch']
     best_perf = checkpoint['best_perf']
     config = checkpoint['config']
-
-    if hasattr(config, 't2v_w2v'):
+    
+    if config.text_encoding.find('w2v')>0:
         w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
-        w2v_feature_file = os.path.join(w2v_data_path, 'feature.bin')
-        config.t2v_w2v.w2v.binary_file = w2v_feature_file
+        #w2v_feature_file = os.path.join(w2v_data_path, 'feature.bin')
+        #config.t2v_w2v.w2v.binary_file = w2v_feature_file
+        if config.text_encoding.find('w2v_nsw')>0:
+            config.t2v_w2v = W2VecNSW(w2v_data_path)
+        else:
+            config.t2v_w2v = W2Vec(w2v_data_path)
     
     for encoding in config.text_encoding.split('@'):
         if encoding == 'bert_precomputed':
@@ -148,8 +153,7 @@ def main():
     })
 
     for query_set in opt.query_sets.split(','):
-        output_dir = os.path.join(rootpath, testCollection, 'SEA_predict_results',
-                                  query_set, opt.sim_name)
+        output_dir = os.path.join(rootpath, testCollection, 'SimilarityIndex', query_set, opt.sim_name)
         pred_result_file = os.path.join(output_dir, 'id.sent.score.txt')
 
         if util.checkToSkip(pred_result_file, opt.overwrite):

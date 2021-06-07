@@ -1,13 +1,18 @@
 rootpath=$HOME/VisualSearch
 overwrite=0
-trainCollection=msvdtrain
-valCollection=msvdval
-testCollection=msvdtest
+
+collection=msvd
+trainCollection=${collection}train
+valCollection=${collection}val
+testCollection=${collection}test
 
 if [ "$#" -ne 2 ];then
     echo "Usage: $0 config gpuID"
     exit
 fi
+
+# build a vocabulary on the training set
+bash do_build_vocab.sh $trainCollection
 
 # config=sea_resnext101-resnet152_bow_w2v
 # config=sea_resnext101-resnet152_bow_w2v_gru
@@ -24,8 +29,8 @@ prefix=runs_0
 CUDA_VISIBLE_DEVICES=$gpu python trainer.py $trainCollection $valCollection --overwrite $overwrite --rootpath $rootpath --config $config --model_prefix $prefix
 #exit
 # ---test---
-model_path=$rootpath/$trainCollection/sea_train/$valCollection/$config/$prefix/model_best.pth.tar
-sim_name=$trainCollection/sea_train/$valCollection/$config/$prefix
+model_path=$rootpath/$trainCollection/Models/$valCollection/$config/$prefix/model_best.pth.tar
+sim_name=$trainCollection/$valCollection/$config/$prefix
 
 if [ ! -f "$model_path" ]; then
     echo "model not found: $model_path"
