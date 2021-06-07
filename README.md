@@ -102,7 +102,10 @@ bash do_train_and_test_msvd.sh $config $gpu_id
 ```
 
 ### Test and evaluate a pre-trained model
-to do
+
+```bash
+bash do_test_msvdtest.sh sea_resnext101-resnet152_bow_w2v_bert 0
+```
 
 ## Performance
 

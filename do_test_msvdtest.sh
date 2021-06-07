@@ -1,6 +1,5 @@
 
-# rootpath=$HOME/VisualSearch
-rootpath=data
+rootpath=$HOME/VisualSearch
 overwrite=0
 
 trainCollection=msvdtrain
@@ -11,8 +10,8 @@ config=$1
 gpu=$2
 
 prefix=runs_0
-model_path=$rootpath/$trainCollection/sea_train/$valCollection/$config/$prefix/model_best.pth.tar
-sim_name=$trainCollection/sea_train/$valCollection/$config/$prefix
+model_path=$rootpath/$trainCollection/Models/$valCollection/$config/$prefix/model_best.pth.tar
+sim_name=$trainCollection/Models/$valCollection/$config/$prefix
 
 if [ ! -f "$model_path" ]; then
     echo "model not found: $model_path"

@@ -150,8 +150,7 @@ def main():
     })
 
     for query_set in opt.query_sets.split(','):
-        output_dir = os.path.join(rootpath, testCollection, 'SEA_predict_results',
-                                  query_set, opt.sim_name)
+        output_dir = os.path.join(rootpath, testCollection, 'SimilarityIndex', query_set, opt.sim_name)
         pred_result_file = os.path.join(output_dir, 'id.sent.score.txt')
 
         if util.checkToSkip(pred_result_file, opt.overwrite):

@@ -103,9 +103,7 @@ def main():
     val_set = opt.val_set
     config = load_config('configs.%s' % opt.config_name)
 
-    model_path = os.path.join(rootpath, trainCollection, 'sea_train',
-                              valCollection, val_set, opt.config_name,
-                              opt.model_prefix)
+    model_path = os.path.join(rootpath, trainCollection, 'Models', valCollection, val_set, opt.config_name, opt.model_prefix)
     if util.checkToSkip(os.path.join(model_path, 'model_best.pth.tar'),
                         opt.overwrite or opt.evaluate):
         sys.exit(0)
