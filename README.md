@@ -35,36 +35,35 @@ pip install -r requirements.txt
 │   │       ├── feature.bin
 │   │       ├── id.txt
 │   │       └── shape.txt
-│   └── TextData
-│       ├── msvd.caption.txt
-│       └── PrecomputedSentFeat
-│           └── bert_feature_Layer_-2_uncased_L-12_H-768_A-12
-│                ├── feature.bin
-│                ├── id.txt
-│                └── shape.txt
-│
+│   ├── TextData
+│   │    └── msvd.caption.txt
+│   └── SentFeatureData
+│        └── msvd.caption.txt
+│             └── bert_feature_Layer_-2_uncased_L-12_H-768_A-12
+│                  ├── feature.bin
+│                  ├── id.txt
+│                  └── shape.txt
 ├── msvdtrain
 │   ├── FeatureData -> ../msvd/FeatureData/
 │   ├── TextData
-│   │   ├── msvdtrain.caption.txt
-│   │   └── PrecomputedSentFeat -> ../../msvd/TextData/PrecomputedSentFeat/
+│   │   └── msvdtrain.caption.txt
+│   ├── SentFeatureData -> ../msvd/SentFeatureData/
 │   └── VideoSets
 │       └── msvdtrain.txt
 │
 ├── msvdval
-│   ├── FeatureData
-│   │   └── mean_resnext101_resnet152 -> ../../msvd/FeatureData/mean_resnext101_resnet152/
+│   ├── FeatureData -> ../msvd/FeatureData/
 │   ├── TextData
-│   │   ├── msvdval.caption.txt
-│   │   └── PrecomputedSentFeat -> ../../msvd/TextData/PrecomputedSentFeat/
+│   │   └── msvdval.caption.txt
+│   ├── SentFeatureData -> ../msvd/SentFeatureData/
 │   └── VideoSets
 │       └── msvdval.txt
 │
 └── msvdtest
      ├── FeatureData -> ../msvd/FeatureData/
      ├── TextData
-     │   ├── msvdtest.caption.txt
-     │   └── PrecomputedSentFeat -> ../../msvd/TextData/PrecomputedSentFeat/
+     │   └── msvdtest.caption.txt
+     ├── SentFeatureData -> ../msvd/SentFeatureData/    
      └── VideoSets
           └── msvdtest.txt
 ```

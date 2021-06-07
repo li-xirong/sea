@@ -103,7 +103,7 @@ def main():
     val_set = opt.val_set
     config = load_config('configs.%s' % opt.config_name)
 
-    model_path = os.path.join(rootpath, trainCollection, 'sea_train',
+    model_path = os.path.join(rootpath, trainCollection, 'Models',
                               valCollection, val_set, opt.config_name,
                               opt.model_prefix)
     if util.checkToSkip(os.path.join(model_path, 'model_best.pth.tar'),
@@ -404,56 +404,56 @@ def train(model, train_loader, fw=None):
         #        fw.write('%s %s\n' % (cap_id, ' '.join([vis_ids[k] for k in indices_im[j]])))
 
 
-def validate(model, val_loader, epoch, metric='mir'):
-    # compute the encoding for all the validation videos and captions
-    ## video retrieval
-    ## Multi-Space
-    #txt2vis_sim = model.validate_similarity(val_loader)
+# def validate(model, val_loader, epoch, metric='mir'):
+#     # compute the encoding for all the validation videos and captions
+#     ## video retrieval
+#     ## Multi-Space
+#     #txt2vis_sim = model.validate_similarity(val_loader)
 
-    #(r1, r5, r10, medr, meanr, mir) = evaluation.eval_qry2retro(txt2vis_sim, n_qry=1)
-    vis_embs, txt_embs, vis_ids, txt_ids = evaluation.encode_data(
-        model, val_loader)
+#     #(r1, r5, r10, medr, meanr, mir) = evaluation.eval_qry2retro(txt2vis_sim, n_qry=1)
+#     vis_embs, txt_embs, vis_ids, txt_ids = evaluation.encode_data(
+#         model, val_loader)
 
-    keep_vis_order = []
-    keep_vis_ids = []
-    for i, vid in enumerate(vis_ids):
-        if vid not in keep_vis_ids:
-            keep_vis_order.append(i)
-            keep_vis_ids.append(vid)
-    vis_embs = vis_embs[keep_vis_order]
-    vis_ids = keep_vis_ids
+#     keep_vis_order = []
+#     keep_vis_ids = []
+#     for i, vid in enumerate(vis_ids):
+#         if vid not in keep_vis_ids:
+#             keep_vis_order.append(i)
+#             keep_vis_ids.append(vid)
+#     vis_embs = vis_embs[keep_vis_order]
+#     vis_ids = keep_vis_ids
 
-    # video retrieval
-    txt2vis_sim = evaluation.compute_sim(txt_embs, vis_embs)
-    #(r1, r5, r10, medr, meanr, mir) = evaluation.eval_qry2retro(txt2vis_sim, n_qry=1)
-    inds = np.argsort(txt2vis_sim, axis=1)
-    label_matrix = np.zeros(inds.shape)
-    for index in range(inds.shape[0]):
-        ind = inds[index][::-1]
-        label_matrix[index][np.where(
-            np.array(vis_ids)[ind] == txt_ids[index].split('#')[0])[0]] = 1
+#     # video retrieval
+#     txt2vis_sim = evaluation.compute_sim(txt_embs, vis_embs)
+#     #(r1, r5, r10, medr, meanr, mir) = evaluation.eval_qry2retro(txt2vis_sim, n_qry=1)
+#     inds = np.argsort(txt2vis_sim, axis=1)
+#     label_matrix = np.zeros(inds.shape)
+#     for index in range(inds.shape[0]):
+#         ind = inds[index][::-1]
+#         label_matrix[index][np.where(
+#             np.array(vis_ids)[ind] == txt_ids[index].split('#')[0])[0]] = 1
 
-    (r1, r5, r10, medr, meanr, mir, mAP) = evaluation.eval(label_matrix)
-    sum_recall = r1 + r5 + r10
-    print(" * Text to video:")
-    print(" * r_1_5_10: {}".format([round(r1, 3),
-                                    round(r5, 3),
-                                    round(r10, 3)]))
-    print(" * medr, meanr, mir: {}".format(
-        [round(medr, 3), round(meanr, 3),
-         round(mir, 3)]))
-    print(" * mAP: {}".format(round(mAP, 3)))
-    print(" * " + '-' * 10)
+#     (r1, r5, r10, medr, meanr, mir, mAP) = evaluation.eval(label_matrix)
+#     sum_recall = r1 + r5 + r10
+#     print(" * Text to video:")
+#     print(" * r_1_5_10: {}".format([round(r1, 3),
+#                                     round(r5, 3),
+#                                     round(r10, 3)]))
+#     print(" * medr, meanr, mir: {}".format(
+#         [round(medr, 3), round(meanr, 3),
+#          round(mir, 3)]))
+#     print(" * mAP: {}".format(round(mAP, 3)))
+#     print(" * " + '-' * 10)
 
-    writer.add_scalar('val/r1', r1, epoch)
-    writer.add_scalar('val/r5', r5, epoch)
-    writer.add_scalar('val/r10', r10, epoch)
-    writer.add_scalar('val/medr', medr, epoch)
-    writer.add_scalar('val/meanr', meanr, epoch)
-    writer.add_scalar('val/mir', mir, epoch)
-    writer.add_scalar('val/mAP', mAP, epoch)
+#     writer.add_scalar('val/r1', r1, epoch)
+#     writer.add_scalar('val/r5', r5, epoch)
+#     writer.add_scalar('val/r10', r10, epoch)
+#     writer.add_scalar('val/medr', medr, epoch)
+#     writer.add_scalar('val/meanr', meanr, epoch)
+#     writer.add_scalar('val/mir', mir, epoch)
+#     writer.add_scalar('val/mAP', mAP, epoch)
 
-    return locals().get(metric, mir)
+#     return locals().get(metric, mir)
 
 
 def validate_v2(model, txt_loader, vis_loader, epoch, metric='mir'):

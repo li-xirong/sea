@@ -30,10 +30,12 @@ def get_we(vocab, w2v_dir):
     we = np.random.uniform(low=-1.0, high=1.0, size=(nr_words, ndims))
 
     renamed, vecs = w2v.read(words)
-    word_to_idx = dict(zip(vocab, range(nr_words)))
+    #import pdb; pdb.set_trace()
+    #dict(zip(vocab, range(nr_words-1)))
 
     for i, word in enumerate(renamed):
-        idx = word_to_idx[word] 
+        idx = vocab.word2idx[word]
+        #idx = word_to_idx[word] 
         we[idx] = vecs[i]
 
     return torch.Tensor(we)
@@ -262,6 +264,7 @@ class GruTxtEncoder(TxtEncoder):
                           batch_first=True,
                           dropout=opt.rnn_dropout,
                           bidirectional=False)
+        
         self.output_size = opt.rnn_size
 
     def __init__(self, opt):
@@ -271,8 +274,9 @@ class GruTxtEncoder(TxtEncoder):
         self.we = nn.Embedding(len(self.t2v_idx.vocab), opt.we_dim)
         if opt.we_dim == 500:
             self.we.weight = nn.Parameter(opt.we)  # initialize with a pre-trained 500-dim w2v
-
+        
         self._init_rnn(opt)
+        # self.rnn_size = opt.rnn_size
         
 
     def forward(self, txt_input):
@@ -304,21 +308,21 @@ class GruTxtEncoder(TxtEncoder):
         padded = pad_packed_sequence(out, batch_first=True)
 
         if self.pooling == 'mean':
-            out = torch.zeros(batch_size, self.rnn_size).to(device)
+            out = torch.zeros(batch_size, self.output_size).to(device)
             for i, ln in enumerate(lengths):
                 out[i] = torch.mean(padded[0][i][:ln], dim=0)
         elif self.pooling == 'last':
             I = torch.LongTensor(lengths).view(-1, 1, 1)
-            I = I.expand(batch_size, 1, self.rnn_size) - 1
+            I = I.expand(batch_size, 1, self.output_size) - 1
             I = I.to(device)
             out = torch.gather(padded[0], 1, I).squeeze(1)
         elif self.pooling == 'mean_last':
-            out1 = torch.zeros(batch_size, self.rnn_size).to(device)
+            out1 = torch.zeros(batch_size, self.output_size).to(device)
             for i, ln in enumerate(lengths):
                 out1[i] = torch.mean(padded[0][i][:ln], dim=0)
 
             I = torch.LongTensor(lengths).view(-1, 1, 1)
-            I = I.expand(batch_size, 1, self.rnn_size) - 1
+            I = I.expand(batch_size, 1, self.output_size) - 1
             I = I.to(device)
             out2 = torch.gather(padded[0], 1, I).squeeze(1)
             out = torch.cat((out1, out2), dim=1)
@@ -333,7 +337,7 @@ class LstmTxtEncoder(GruTxtEncoder):
                            batch_first=True,
                            dropout=opt.rnn_dropout,
                            bidirectional=False)
-        self.output_size = opt.rnn_size
+        self.output_size = opt.rnn_size * 2
 
 
 class BiGruTxtEncoder(GruTxtEncoder):
@@ -346,8 +350,9 @@ class BiGruTxtEncoder(GruTxtEncoder):
                           bidirectional=True)
         self.output_size = opt.rnn_size * 2
 
-    def __init__(self, opt):
-        super().__init__(opt)
+    # def __init__(self, opt):
+    #     super().__init__(opt)
+        # self.rnn_size = opt.rnn_size * 2
 
 
 
