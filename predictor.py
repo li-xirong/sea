@@ -16,7 +16,7 @@ from common import *
 from model import get_model, SentFeatBase
 from bigfile import BigFile
 from generic_utils import Progbar
-from txt2vec import W2VecNSW
+from txt2vec import W2Vec, W2VecNSW
 
 
 def parse_args():

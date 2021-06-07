@@ -28,18 +28,18 @@ pip install -r requirements.txt
 ROOTPATH=$HOME/VisualSearch
 mkdir -p $ROOTPATH; cd $ROOTPATH
 
-# download a mini-version of a word2vec model trained on Flickr tags. 
+# download a mini-version of a word2vec model trained on Flickr tags (63MB). For the full-sized version (3 GB), please visit https://github.com/danieljf24/w2vv
 wget http://lixirong.net/data/sea/w2v-flickr-mini.tar.gz
 tar xzf w2v-flickr-mini.tar.gz
 
-# download the MSVD data package 
+# download the MSVD data package (353 MB)
 wget http://lixirong.net/data/sea/msvd.tar.gz
 tar xzf msvd.tar.gz
 ```
 
 ### Data organization
 
-We use MSVD as an example. Other collections such as MSR-VTT and TGIF are organized in a similar style.
+We use MSVD as an example. Other collections such as MSR-VTT and TGIF are organized in a similar structure.
 
 ```bash
 ├── msvd
@@ -104,7 +104,7 @@ bash do_train_and_test_msvd.sh $config $gpu_id
 ### Test and evaluate a pre-trained model
 
 ```bash
-bash do_test_msvdtest.sh sea_resnext101-resnet152_bow_w2v_bert 0
+bash do_test_msvd.sh sea_resnext101-resnet152_bow_w2v_bert 0
 ```
 
 ## Performance

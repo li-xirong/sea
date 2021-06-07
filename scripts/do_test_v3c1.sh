@@ -15,7 +15,7 @@ fi
 config=$1
 prefix=runs_0
 
-model_path=$rootpath/$trainCollection/sea_train/$valCollection/$val_set/$config/$prefix/model_best.pth.tar
+model_path=$rootpath/$trainCollection/Models/$valCollection/$val_set/$config/$prefix/model_best.pth.tar
 sim_name=$trainCollection/$valCollection/$val_set/$config/$prefix
 
 if [ ! -f "$model_path" ]; then

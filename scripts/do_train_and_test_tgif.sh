@@ -26,8 +26,8 @@ CUDA_VISIBLE_DEVICES=$gpu python trainer.py $trainCollection $valCollection --ov
 #exit
 
 # ---test---
-model_path=$rootpath/$trainCollection/sea_train/$valCollection/$config/$prefix/model_best.pth.tar
-sim_name=$trainCollection/sea_train/$valCollection/$config/$prefix
+model_path=$rootpath/$trainCollection/Models/$valCollection/$config/$prefix/model_best.pth.tar
+sim_name=$trainCollection/$valCollection/$config/$prefix
 
 if [ ! -f "$model_path" ]; then
     echo "model not found: $model_path"
