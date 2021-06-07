@@ -16,6 +16,7 @@ from common import *
 from model import get_model, SentFeatBase
 from bigfile import BigFile
 from generic_utils import Progbar
+from txt2vec import W2Vec
 
 
 def parse_args():
@@ -91,8 +92,9 @@ def main():
 
     if hasattr(config, 't2v_w2v'):
         w2v_data_path = os.path.join(rootpath, 'word2vec', 'w2v-flickr-mini')
-        w2v_feature_file = os.path.join(w2v_data_path, 'feature.bin')
-        config.t2v_w2v.w2v.binary_file = w2v_feature_file
+        #w2v_feature_file = os.path.join(w2v_data_path, 'feature.bin')
+        #config.t2v_w2v.w2v.binary_file = w2v_feature_file
+        config.t2v_w2v = W2Vec(w2v_data_path)
     
     for encoding in config.text_encoding.split('@'):
         if encoding == 'bert_precomputed':
