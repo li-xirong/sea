@@ -167,6 +167,9 @@ Model                        |R@1 |R@5 |R@10|Med r|mAP |
   title={SEA: Sentence Encoder Assembly for Video Retrieval by Textual Queries}, 
   author={Xirong Li and Fangming Zhou and Chaoxi Xu and Jiaqi Ji and Gang Yang},
   journal={IEEE Transactions on Multimedia}, 
-  year={2020},
+  year={2021},
+  volume={23},
+  number={},
+  pages={4351-4362},
   doi={10.1109/TMM.2020.3042067}}
 ```
